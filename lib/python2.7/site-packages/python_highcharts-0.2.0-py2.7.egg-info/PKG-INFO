@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: python-highcharts
+Version: 0.2.0
+Summary: Python Highcharts wrapper
+Home-page: https://github.com/kyper-data/python-highcharts
+Author: Kyper Developers
+Author-email: developers@kyperdata.com
+License: UNKNOWN
+Download-URL: https://github.com/kyper-data/python-highcharts/tarball/0.2.0
+Description: UNKNOWN
+Keywords: python,ipython,highcharts,chart,visualization,graph,javascript,html
+Platform: UNKNOWN
+Classifier: Framework :: IPython
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Financial and Insurance Industry
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3

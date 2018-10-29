@@ -1,0 +1,34 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../static/css/style.css">
+</head>
+<body>
+
+  <form action="/main" method = 'post'>
+    <div>
+        <p>Semester:</p>
+        <select name="semester">
+        {% for semester in semesters %}
+           
+            <option value="{{ semester.id }}">{{ semester.year }}  {{semester.season}} {{ semester.course_no }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <div>
+        <p>week:</p>
+        <select name="week">
+        {% for week in weeks %}
+            <option value="{{ str(week[0]) }}">{{ str(week[0]) }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    
+    <input type="submit" name="submit" value="Get reports">
+    <input type="submit" name="submit" value="Get Manager Report">
+    <input type="submit" name="submit" value="Set student alias_name">
+    <input type="submit" name="submit" value="Student drop class">
+    <input type="submit" name="submit" value="Logout">
+  </form> 
+    
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link href="https://www.highcharts.com/highslide/highslide.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/modules/heatmap.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
+    </head>
+    <body style="margin:0;padding:0">
+                <div id="container" style="width:1000px;height:800px;">Loading....</div>
+
+
+    <script>
+        $(function(){
+
+
+
+
+
+            Highcharts.setOptions({"lang": {}, "global": {}});
+            var option = {"loading": {}, "subtitle": {}, "xAxis": {"showLastLabel": true, "labels": {"formatter": function () {                return this.value;            }}, "allowDecimals": false, "title": {"text": "Week", "enabled": true}}, "title": {"text": "Normalized Rank Comparison Chart"}, "series": {}, "labels": {}, "yAxis": {"lineWidth": 2, "min": -1, "title": {"text": "Normalized Rank"}, "max": 1, "reversed": true, "labels": {"formatter": function () {                    return this.value;                }}, "reversedStacks": false}, "chart": {"width": 1000, "renderTo": "container", "height": 800}, "tooltip": {"headerFormat": "<b>{series.name}</b><br/>", "pointFormat": "Rank {point.y} : Week {point.x}"}, "plotOptions": {}, "credits": {"enabled": false}, "colors": {}, "pane": {}, "exporting": {}, "drilldown": {}, "navigation": {"buttonOptions": {"enabled": false}}, "legend": {"enabled": true, "layout": "vertical"}};
+
+
+ 
+
+            var chart = new Highcharts.Chart(option);
+
+            var data = [{"name": "Abhishek", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.25], [2, 0.444], [3, -0.222], [4, -0.347], [5, -0.409], [6, -0.383], [7, -0.406]]}, {"name": "Praneta", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.556], [3, 0.111], [4, -0.311], [5, -0.307], [6, -0.235], [7, -0.314]]}, {"name": "Preetham", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.333], [3, -0.222], [4, -0.14], [5, -0.173], [6, -0.173], [7, -0.296]]}, {"name": "Chetan", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.222], [2, 0.667], [3, -0.375], [4, -0.082], [5, -0.103], [6, -0.136], [7, -0.148]]}, {"name": "Ankita", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.667], [3, -0.222], [4, -0.017], [5, 0.022], [6, -0.081], [7, -0.117]]}, {"name": "Chirag", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.333], [2, 1.0], [3, 0.222], [4, -0.158], [5, -0.128], [6, -0.123], [7, -0.1]]}, {"name": "Tyler", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 1.25], [3, 0.111], [4, -0.166], [5, -0.095], [6, -0.077], [7, -0.076]]}, {"name": "Vrishali", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.25], [2, 2.0], [3, 0.222], [4, -0.029], [5, -0.139], [6, -0.095], [7, -0.065]]}, {"name": "Shweta", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.333], [3, -0.111], [4, -0.061], [5, -0.03], [6, -0.088], [7, -0.063]]}, {"name": "Shantanu", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.111], [2, 0.889], [3, -0.222], [4, -0.032], [5, -0.06], [6, -0.08], [7, -0.026]]}, {"name": "Rohan", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.25], [2, 1.0], [3, 0.0], [4, -0.09], [5, -0.018], [6, -0.045], [7, -0.02]]}, {"name": "Adithya", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.333], [2, 0.667], [3, -0.111], [4, 0.154], [5, 0.257], [6, 0.135], [7, 0.014]]}, {"name": "Chaitrali", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.778], [3, 0.111], [4, 0.006], [5, -0.093], [6, -0.033], [7, 0.032]]}, {"name": "Rocco", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.667], [3, 0.333], [4, 0.131], [5, 0.118], [6, 0.089], [7, 0.076]]}, {"name": "Murtaza", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.0], [2, 0.555], [3, -0.063], [4, 0.047], [5, 0.07], [6, 0.123], [7, 0.147]]}, {"name": "Ramyashree", "marker": {"enabled": true}, "type": "line", "data": [[1, 1.5], [2, 0.667], [3, 0.188], [4, 0.059], [5, 0.036], [6, 0.164], [7, 0.174]]}, {"name": "Shradha", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.222], [2, 0.889], [3, -0.111], [4, 0.16], [5, 0.243], [6, 0.217], [7, 0.182]]}, {"name": "Nishchaya", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.25], [2, 1.75], [3, 0.313], [4, 0.216], [5, 0.185], [6, 0.193], [7, 0.225]]}, {"name": "Arpit", "marker": {"enabled": true}, "type": "line", "data": [[1, -0.25], [2, 2.0], [3, 0.222], [4, 0.13], [5, 0.281], [6, 0.298], [7, 0.262]]}, {"name": "Chris", "marker": {"enabled": true}, "type": "line", "data": [[1, 0.111], [2, 0.556], [3, -0.063], [4, 0.247], [5, 0.18], [6, 0.264], [7, 0.271]]}, {"name": "Yunhao", "marker": {"enabled": true}, "type": "line", "data": [[1, 1.0], [2, 0.667], [3, -0.111], [4, 0.236], [5, 0.157], [6, 0.23], [7, 0.284]]}];
+            var dataLen = data.length;
+            for (var ix = 0; ix < dataLen; ix++) {
+                chart.addSeries(data[ix]);
+            }
+ 
+
+
+
+
+
+
+
+        
+    });
+        </script>
+
+    </body>
+</html>

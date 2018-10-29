@@ -1,0 +1,38 @@
+.manager-form-header{
+   text-align: center;
+   font-size: 1.5em;
+   color: #0399DB;
+}
+
+.questions-message{
+   padding-bottom: 10px;
+}
+
+.manager-panel{
+   border-radius: 5px;
+   border: 2px solid #DACCCB;
+   padding: 20px;    
+}
+
+table{
+    width: 70%;
+}
+
+.table-col-1{
+    width: 45%;
+}
+
+.table-col-2{
+    width: 20%;
+}
+
+.table-col-3{
+    width: 20%;
+    float: left;
+    text-align: left;
+}
+
+.manger-rating-header{
+    width: 7%;
+    text-align: center;    
+}

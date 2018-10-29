@@ -1,0 +1,24 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Evaluation Login</title>
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+	<div class="container">
+		<div id="login-form">
+			<h3>P532/P632 Admin Login</h3>
+			<fieldset>
+				<form action="" method="post">
+					<input name="username" type="text" required value="" placeholder="Username">					
+					<input name="password" type="password" required value="" placeholder="Password">					
+					<input type="submit" value="Login">					
+				</form>
+			</fieldset>
+		</div>	
+		{% if error %}
+          <p class="error"><strong>Error:</strong> {{ error }}
+        {% endif %}
+	</div>
+</body>
+</html>

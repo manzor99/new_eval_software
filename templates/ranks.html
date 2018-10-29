@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link href="https://www.highcharts.com/highslide/highslide.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
+    </head>
+    <body style="margin:0;padding:0">
+                <div id="container" style="">Loading....</div>
+
+
+    <script>
+        $(function(){
+
+
+ 
+
+
+
+
+            Highcharts.setOptions({"lang": {}, "global": {}});
+            var option = {"loading": {}, "subtitle": {}, "xAxis": {"reversed": false, "labels": {"formatter": function () {                return this.value;            }}, "showLastLabel": true, "maxPadding": 0.05, "title": {"text": "Rank", "enabled": true}}, "title": {"text": "Normalized Rank Chart"}, "series": {}, "labels": {}, "chart": {"renderTo": "container", "inverted": true}, "tooltip": {"headerFormat": "<b>{series.name}</b><br/>", "pointFormat": "Rank {point.x}: Week {point.y}"}, "plotOptions": {}, "yAxis": {"labels": {"formatter": function () {                return this.value;            }}, "lineWidth": 2, "title": {"text": "Week"}}, "credits": {"enabled": false}, "colors": {}, "pane": {}, "exporting": {}, "drilldown": {}, "navigation": {}, "legend": {"enabled": false}};
+
+
+            var data = [{"name": "Normalized Rank", "marker": {"enabled": true}, "type": "spline", "data": [[0.5, 1], [0.5, 2]]}, {"name": "Normalized Rank", "marker": {"enabled": true}, "type": "spline", "data": [[0.5, 1], [0.5, 2]]}];
+            option.series = data;
+
+ 
+
+            var chart = new Highcharts.Chart(option);
+
+
+
+
+
+ 
+
+
+        
+    });
+        </script>
+
+    </body>
+</html>

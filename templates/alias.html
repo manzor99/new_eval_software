@@ -1,0 +1,23 @@
+<html>
+<body>
+  <p>Leaving alias blank will unset alias_name for chosen student.</p>
+  <form method = 'post'>
+    <div>
+        <p>student:</p>
+        <select name="student">
+        {% for student in students %}
+           
+            <option value="{{ student.user_name }}">{{ student.user_name}}, {{ student.first_name}} {{ student.last_name }}</option>
+        {% endfor %}
+        </select>
+    </div>
+     <br>
+     <p>alias:</p>
+    <div>
+        <input type="text" name="alias_name">
+    </div>
+    <br>    
+    <input type="submit" name="submit" value="Set alias">
+  </form>
+</body>
+</html>

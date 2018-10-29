@@ -1,0 +1,224 @@
+<html>
+  <head>    
+    
+<!--      Took out this style sheet because it break coloring printing options
+-->
+<link rel="stylesheet" href={{url_for('static',filename='css/bootstrap.min.css')}}>
+<!--
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+ -->    
+    <style type="text/css">
+    	body {-webkit-print-color-adjust: exact;}
+        h2 {page-break-before: always;  -webkit-print-color-adjust: exact; }
+        
+    </style>
+  </head>
+  <body>
+    <h1>Reports for semester {{semester.year}} {{ semester.season }} {{ semester.course_no }}, week {{currentWeek}}</h1>
+    <p id="demo"></p>
+
+    <script>
+        document.getElementById("demo").innerHTML = Date();
+    </script>
+
+        <table border="1">
+          <tr>
+            <td>Item Name</td><td>Abbreviation</td><td>Calculation/Description</td>
+          </tr>
+          <tr>
+            <td>Normalized Rank</td><td> </td><td>(rank - (No. of reviews+1)/2)/ No. of reviews. <br> Expected Range Of Values: (-0.5,0.5) </td>
+          </tr>
+          <tr>
+            <td>Normalized Token </td><td> </td><td>((100 / (No. of reviews)) - token) / (100 / (No. of reviews) ) </td>
+          </tr>          
+          <tr>
+            <td>Normalized Average Tokens</td><td>Norm. avg. token </td><td>Normalized Average of Tokens Assigned by Evaluators </td>
+          </tr>                    
+          <tr>
+            <td>Unweighted Average Normalized Rank</td><td>Unweigh. avg. rank</td><td>Average of latest versions of Normalized Rank</td>
+          </tr>          
+          <tr>
+            <td>Weighted Average Normalized Rank </td><td>Weigh. avg. rank</td><td>Average of latest versions of Normalized Rank Weighted by the week in which the ranks were given, such that later weeks have a greater weight.</td>
+          </tr>          
+          <tr>
+            <td>Adjective with Frequency </td><td>Adjective (Count)</td><td>The descriptive word most commonly used to describe the person, with the frequency of occurrences in parentheses</td>
+          </tr>          
+          <tr>
+            <td>Weeks where evaluated and evaluator worked together</td><td>Shared Week</td><td>Lists the number of each week in which the evaluated worked with the evaluator</td>
+          </tr>
+          
+          <tr>
+            <td>Blue Background Colored Cell</td><td style="background-color:cyan">BLUE</td><td>Custom Created Adjective (not in provided list)</td>
+          </tr>
+          <tr>
+            <td>Red Background Colored Cell</td><td style="background-color:red">RED</td><td>NEGATIVE Selected Adjective From Provided List</td>
+          </tr>
+          <tr>
+            <td>Orange Background Colored Cell</td><td style="background-color:orange">ORANGE</td><td>Sentiment Analysis Indicates This Decription Is Likely to be NEGATIVE</td>
+          </tr>
+          
+        </table>
+
+    
+    <div >
+    {% if missingNames %}
+    <h2>Students
+    {% for name in missingNames %}
+    {{names[name]}}, 
+    {% endfor %}
+    have not submitted evals yet.
+    </h2>
+    {% endif %}
+
+<!--  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX teams   -->
+    
+    <center><h2>Summary Page: Teams </h2></center>
+    
+    <div class="row" style="float:left; width:50%;">
+    <div class ="col-md-push-3" style="padding:20px;" > 
+    <table border="1" class="table table-hover" style="width:50%;">
+        <tr>
+            <th width="25%;" >Last Week's Team</th>
+            <th width="25%;">Student</th>
+        </tr>
+        {% for student_id in studentsByTeamLastWeek %}
+                <tr>
+                    <td>{{teamNames[student_id]}}</td>
+                    <td>{{ names[student_id] }}</td>
+                </tr>
+        {% endfor %}
+    </table>
+    </div>
+    </div>  
+    
+    
+    <div class="row" style="float:left; width:50%;">
+    <div class ="col-md-push-3" style="padding:20px;" > 
+    <table border="1" class="table table-hover" style="width:50%;">
+        <tr>
+            <th width="25%;" >This Week's Team</th>
+            <th width="25%;">Student</th>
+        </tr>
+        {% for student_id in studentsByTeamThisWeek %}
+                <tr>
+                    <td>{{thisWeekTeamNames[student_id]}}</td>
+                    <td>{{ names[student_id] }}</td>
+                </tr>
+        {% endfor %}
+    </table>
+    </div>
+    </div>  
+
+
+    
+<!-- teams  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  --!>
+
+    <center><h2>Summary Page: Sorted by Unweighted Normalized Average Rank</h2></center>
+    <div class="row">
+    <div class ="col-md-push-3" style="padding:20px;" >       <!--  class ="col-md-6 col-md-push-3">  -->
+    <table border="1" class="table table-hover">
+        
+        <tr>
+            <th width="17%;" >Student</th>
+            <th width="12;">▿Unweigh. avg. rank</th>
+            <th width="17%;">Weigh. avg. rank (dup P632)</th>
+            <th width="12%;">Norm. avg. token</th>
+            <th width="15%;">Adjective (count)</th>
+            <th width="12%;"># reviews</th>
+            <th width="15%;">Team Name</th>
+        </tr>
+        {% for student_id in sortedByAverageRank %}
+                <tr>
+                    <td>{{ names[student_id] }}</td>
+                    <td>{{averageRank[currentWeek-1][student_id]}}</td>
+                    <td>{{weightedRank[student_id]}}</td>
+                    <td>{{averageToken[currentWeek-1][student_id]}}</td>
+                    <td>{{adjectives[student_id]}}</td>
+                    <td>{{len(reversedEvals[currentWeek-1][student_id])}}</td>
+                    <td>{{teamNames[student_id]}}</td>
+                </tr>
+        {% endfor %}
+    </table>
+    </div>
+    </div>  
+    
+
+     
+    <div>
+    {% include 'charts/compare.html' %}
+  
+    {% for student_id in sortedByAverageRank %}
+        {% if isStudentActive[student_id] %}
+        <br>
+        <h2 align="center">Report for: {{ names[student_id] }} (Evaluated) ({{teamNames[student_id]}} )  </h2>
+        {% if currentWeek > 1 and averageRank[currentWeek-1].get(student_id) and averageRank[currentWeek-2].get(student_id) %}
+            <center><p>Average rank: {{ averageRank[currentWeek-1][student_id] }}, 
+            change {{ averageRank[currentWeek-1][student_id]-averageRank[currentWeek-2][student_id] }} 
+            from last week.</p></center>
+        {% endif %}
+        <div style="width:90%">
+            <table class="table table-hover" style="text-align:justify" border="1">
+            <tr>
+                <th>Evaluator</th>
+                <th>Shared Week</th>
+                <th># revs.</th>
+                <th>▿Rank</th>
+                <th>Tokens</th>
+                <th>Adjective</th>
+                <th>Description</th>
+                <th>Evaluator's Unweigh. avg. rank</th>
+<!--                <th>Sentiment of Description</th>	-->
+            </tr>
+            {% if sortedEvaler[currentWeek-1].get(student_id) %}
+                {% for evaler in sortedEvaler[currentWeek-1][student_id][0] %}
+                    <tr>
+                        <td><b>{{ names[evaler] }}</b></td>
+                        <td>{{ connection[student_id][evaler] }}</td>
+                        <td>{{ len(evals[currentWeek-1][evaler]) }}</td>
+                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].rank }}</td>
+                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].token }}</td>
+                        {% if
+                        reversedEvals[currentWeek-1][student_id][evaler][0].adjective.lower() in BAD_ADJECTIVES  %}
+                      	<td style="background-color:red">{{ reversedEvals[currentWeek-1][student_id][evaler][0].adjective }} </td>
+                        <td style="background-color:red">{{ reversedEvals[currentWeek-1][student_id][evaler][0].description }}</td>
+                        {% elif
+                        reversedEvals[currentWeek-1][student_id][evaler][0].adjective.lower() not in GOOD_ADJECTIVES  %}
+                      	<td style="background-color:cyan">{{ reversedEvals[currentWeek-1][student_id][evaler][0].adjective }}</td>
+                        <td style="background-color:cyan">{{ reversedEvals[currentWeek-1][student_id][evaler][0].description }}</td>
+                        {% elif "NEGATIVE" in reversedEvals[currentWeek-1][student_id][evaler][0].sentiment and reversedEvals[currentWeek-1][student_id][evaler][0].rank  > len(evals[currentWeek-1][evaler])/2 %}
+                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].adjective }}</td>
+                        <td style="background-color:orange">{{ reversedEvals[currentWeek-1][student_id][evaler][0].description }}</td>
+                        {% else %}
+                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].adjective }}</td>
+                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].description }}</td>
+                        {% endif %}
+                        <td>{{ averageRank[currentWeek-1].get( evaler) }} </td>
+<!--                        <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].sentiment }} </td>      -->
+                    </tr>
+                {% endfor %}
+                {% if sortedEvaler[currentWeek-1][student_id][1] %}
+                <tr class="info"><td colspan="7"></td></tr>
+                    {% for evaler in sortedEvaler[currentWeek-1][student_id][1] %}
+                        <tr>
+                            <td>{{ names[evaler] }}</td>
+                            <td>{{ connection[student_id][evaler] }}</td>
+                            <td>{{ len(evals[currentWeek-1][evaler]) }}</td>
+                            <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].rank }}</td>
+                            <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].token }}</td>
+                            <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].adjective }}</td>
+                            <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].description }}</td>
+                            <td>{{ averageRank[currentWeek-1].get( evaler) }} </td>
+	                    <td>{{ reversedEvals[currentWeek-1][student_id][evaler][0].sentiment }} </td>                            
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
+        </table>
+    </div>
+        {% include 'charts/' + student_id + '.html' %}
+      {% endif %}
+    {% endfor %}
+    </div>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  </body>
+</html>

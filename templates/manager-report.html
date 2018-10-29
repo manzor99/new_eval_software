@@ -1,0 +1,141 @@
+<html>
+  <head>    
+    
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/manager-report-stylesheet.css') }}">
+      <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js' type='text/javascript'></script>
+    <style type="text/css">
+        h2 {page-break-before: always}
+       
+    </style>
+  </head>
+  <body>
+    <h1>Manager Evaluation Report for {{semester.year}} {{ semester.season }} {{ semester.course_no }}, Week {{currentWeek}}</h2>
+    <p id="demo"></p>
+
+    <script>
+        document.getElementById("demo").innerHTML = Date();
+    </script>
+    
+    <img src="{{ url_for('static', filename='manager_images/') }}{{filename}}.png"/>
+    
+    
+    {% for mgrEval in managerEvals%}
+    <h2/>
+    <hr/>
+    
+    <div class="mgr-report-container">
+    
+    
+
+    
+    <div style="float:left;width:13%">
+    	&nbsp;
+    </div>
+    <div style="float:left;width:17%"> 
+<!--      <div style="float:left;">  -->
+      <img src="{{ url_for('static', filename='manager_images/')  }}{{filename}}{{ mgrEval }}.png"  />
+<!--      <div>  -->
+    </div>      
+    
+    
+    <div align="left" style="float:left;width:70%">
+        <label id="mgr-name-label">&nbsp;Manager Name</label>: <label id="mgr-name">{{ names[mgrEval] }}</label>
+    </div>
+
+    <div style="float:left;width:100%">
+    <table align="center" name="ratingTable">
+        <tr>
+            <th>Quality</th>      
+            <td style="font-weight:bold">Approachable Attitude</td>
+            <td style="font-weight:bold">Team Communication</td>
+            <td style="font-weight:bold">Client Interaction</td>
+            <td style="font-weight:bold">Decision Making</td>
+            <td style="font-weight:bold">Resource Utilization</td>
+            <td style="font-weight:bold">Follow up to Completion</td>
+            <td style="font-weight:bold">Task Delegation and Ownership</td>
+            <td style="font-weight:bold">Encourage Team Development</td>
+            <td style="font-weight:bold">Realistic Expectation</td>
+            <td style="font-weight:bold">Performance Under Stress</td>            
+        </tr>
+        {% for evaler in managerEvals[mgrEval]%} 
+        <tr>
+            <th class="line-break">{{ names[evaler] }}</th> 
+            {% for managerEval in managerEvals[mgrEval][evaler]%}  
+                {% if managerEval['approachable_attitude'] != null %}
+                    <td>{{managerEval['approachable_attitude']}}</td>
+                    <td>{{managerEval['team_communication']}}</td>
+                    <td>{{managerEval['client_interaction']}}</td>
+                    <td>{{managerEval['decision_making']}}</td>
+                    <td>{{managerEval['resource_utilization']}}</td>
+                    <td>{{managerEval['follow_up_to_completion']}}</td>
+                    <td>{{managerEval['task_delegation_and_ownership']}}</td>
+                    <td>{{managerEval['encourage_team_development']}}</td>
+                    <td>{{managerEval['realistic_expectation']}}</td>
+                    <td>{{managerEval['performance_under_stress']}}</td>
+                {% endif %}                
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        <tr>
+            <th>Mean</th>  
+            <td>{{avgMgrEvals[mgrEval]['approachable_attitude']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['team_communication']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['client_interaction']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['decision_making']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['resource_utilization']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['follow_up_to_completion']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['task_delegation_and_ownership']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['encourage_team_development']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['realistic_expectation']}}</td>
+            <td>{{avgMgrEvals[mgrEval]['performance_under_stress']}}</td>
+        </tr>
+    </table>
+    </div>
+    <br/>
+    <table align="center" class="descTable">
+        <tr>
+            <th>Evaluator</th>
+            <th>Description</th>
+        </tr>
+        {% for evaler in managerEvals[mgrEval]%} 
+        <tr>
+            <td class="line-break">{{ names[evaler] }}</td> 
+            {% for managerEval in managerEvals[mgrEval][evaler]%}  
+                {% if managerEval['approachable_attitude'] == null %}
+                    <td>{{managerEval}}</td>                    
+                {% endif %}                
+            {% endfor %}
+        </tr>
+        {% endfor %}        
+    </table>
+    </div>
+    
+    {% endfor %}    
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  </body>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('[name=ratingTable]').each(function () {
+        var $this = $(this);
+        var newrows = [];
+        $this.find("tr").each(function () {
+            var i = 0;
+            $(this).find("td,th").each(function () {
+                i++;
+                if (newrows[i] === undefined) {
+                    newrows[i] = $("<tr></tr>");
+                }
+                newrows[i].append($(this));
+            });
+        });
+        $this.find("tr").remove();
+        $.each(newrows, function () {
+            $this.append(this);
+        });
+    });
+
+    return false;
+});
+</script>
+</html>

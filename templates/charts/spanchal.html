@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link href="https://www.highcharts.com/highslide/highslide.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/highcharts-more.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/modules/heatmap.js"></script>
+        <script type="text/javascript" src="https://code.highcharts.com/modules/exporting.js"></script>
+    </head>
+    <body style="margin:0;padding:0">
+                <div id="container_spanchal" style="width:1000px;height:500px;">Loading....</div>
+
+
+    <script>
+        $(function(){
+
+
+
+
+
+            Highcharts.setOptions({"lang": {}, "global": {}});
+            var option = {"loading": {}, "subtitle": {}, "xAxis": {"showLastLabel": true, "labels": {"formatter": function () {                return this.value;            }}, "allowDecimals": false, "title": {"text": "Week", "enabled": true}}, "title": {"text": "Sagar"}, "series": {}, "labels": {}, "yAxis": [{"lineWidth": 2, "min": -1, "title": {"text": "Normalized Rank"}, "max": 1, "reversed": true, "labels": {"formatter": function () {                    return this.value;                }}}, {"lineWidth": 2, "title": {"text": "Normalized Token"}, "min": -1, "opposite": true, "max": 1, "reversed": true, "labels": {"formatter": function () {                    return this.value;                }}}], "chart": {"width": 1000, "renderTo": "container_spanchal", "height": 500}, "tooltip": {"headerFormat": "<b>{series.name}</b><br/>", "pointFormat": "Rank {point.y} : Week {point.x}"}, "plotOptions": {}, "credits": {"enabled": false}, "colors": {}, "pane": {}, "exporting": {}, "drilldown": {}, "navigation": {"buttonOptions": {"enabled": false}}, "legend": {"enabled": true, "layout": "vertical"}};
+
+
+ 
+
+            var chart = new Highcharts.Chart(option);
+
+            var data = [{"name": "Normalized Rank", "marker": {"enabled": true}, "type": "line", "data": []}, {"name": "Normalized Token", "yAxis": 1, "type": "line", "marker": {"enabled": true}, "data": []}];
+            var dataLen = data.length;
+            for (var ix = 0; ix < dataLen; ix++) {
+                chart.addSeries(data[ix]);
+            }
+ 
+
+
+
+
+
+
+
+        
+    });
+        </script>
+
+    </body>
+</html>

@@ -1,0 +1,19 @@
+<html>
+<body>
+  <p>Add or Drop chosen student, i.e. set student.is_active = 1 or 0.</p>
+  <form method = 'post'>
+    <div>
+        <p>student:</p>
+        <select name="student">
+        {% for student in students %}
+           
+            <option value="{{ student.user_name }}">{{ student.user_name}}, {{ student.first_name}} {{ student.last_name }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <br>    
+    <input type="submit" name="submit" value="Add">
+    <input type="submit" name="submit" value="Drop">
+  </form>
+</body>
+</html>
