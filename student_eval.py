@@ -105,7 +105,7 @@ urlSerializer = URLSafeSerializer(key)
 #engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, pool_size=0, pool_recycle=14400)
 
 ##TRYING NULLPOOL
-engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, poolclass=NullPool )
+engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, poolclass=NullPool )
 
 
 try:

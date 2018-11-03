@@ -4,7 +4,6 @@ import sys
 #sys.path.append("/u/kspace/new_eval_soft_github/eval_project/lib/python2.7/site-packages/")
 sys.path.append("lib/python2.7/site-packages/")
 
-
 from flask import flash
 from sqlalchemy import Column, ForeignKey, Integer, String, VARCHAR, TIMESTAMP, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
@@ -359,11 +358,15 @@ if __name__ == '__main__':
     parser.read('config.ini')
     username = parser.get('login', 'username')
     password = parser.get('login', 'password')
+    print username
+    print password
     schema = parser.get('login', 'schema')
     host = parser.get('login', 'host')
     port = parser.get('login', 'port')
-
-    engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema) 
+    
+    print host 
+    print port
+    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema) 
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Base.metadata.tables["evaluation"].drop(bind = engine)
