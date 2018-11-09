@@ -2,7 +2,7 @@ import os
 import sys
 #sys.path.append("/u/kspace/new_eval_soft/eval_project-master/lib/python2.7/site-packages/")
 #sys.path.append("/u/kspace/new_eval_soft_github/eval_project/lib/python2.7/site-packages/")
-sys.path.append("lib/python2.7/site-packages/")
+sys.path.append("/usr/local/lib/python2.7/dist-packages")
 
 
 from flask import flash
@@ -17,6 +17,8 @@ from wtforms import IntegerField, TextField, validators, FieldList, FormField, T
 from wtforms.validators import Required, Length, Optional
 from wtforms import Form as WTForm
 from itsdangerous import TimedJSONWebSignatureSerializer
+import codecs
+codecs.register(lambda name: codecs.lookup('utf8' if name == 'utf8mb4' else None))
 
 Base = declarative_base()
 
@@ -41,11 +43,11 @@ class Student(Base):
             'alias_name': self.alias_name,
 			'login_pwd': self.login_pwd
         }
-        
+
     def get_token(self, expiration=300):
         s = TimedJSONWebSignatureSerializer('keyconfidential', expiration)
         return s.dumps(self.user_name).decode('utf-8')
-        
+
     @staticmethod
     def verify_token(token):
         s = TimedJSONWebSignatureSerializer('keyconfidential')
@@ -53,9 +55,9 @@ class Student(Base):
             data = s.loads(token)
         except:
             return None
-        return data            
-        
-class Semester(Base):  
+        return data
+
+class Semester(Base):
     __tablename__ = 'semester'
     __table_args__ = (
             UniqueConstraint('year', 'season', 'course_no'),
@@ -65,7 +67,7 @@ class Semester(Base):
     create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
     id = Column(Integer, primary_key=True, autoincrement=True)
     course_no = Column(VARCHAR(11), nullable=False)
-    
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -90,7 +92,7 @@ class Manager_Eval(Base):
     realistic_expectation = Column(Integer, nullable=False)
     performance_under_stress = Column(Integer, nullable=False)
     mgr_description = Column(String(4096), nullable=False)
-    
+
     def parse(self, encryptedManagerEval):
         self.approachable_attitude = encryptedManagerEval.approachable_attitude
         self.team_communication = encryptedManagerEval.team_communication
@@ -103,7 +105,7 @@ class Manager_Eval(Base):
         self.realistic_expectation = encryptedManagerEval.realistic_expectation
         self.performance_under_stress = encryptedManagerEval.performance_under_stress
         self.mgr_description = encryptedManagerEval.mgr_description
-        
+
 class EncryptedManagerEval(Base):
     __tablename__ = 'encrypted_manager_eval'
     manager_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -118,7 +120,7 @@ class EncryptedManagerEval(Base):
     realistic_expectation = Column(String(128), nullable=False)
     performance_under_stress = Column(String(128), nullable=False)
     mgr_description = Column(String(4096), nullable=False)
-    
+
     def parse(self, rawManagerEval):
         self.approachable_attitude = rawManagerEval.approachable_attitude
         self.team_communication = rawManagerEval.team_communication
@@ -131,7 +133,7 @@ class EncryptedManagerEval(Base):
         self.realistic_expectation = rawManagerEval.realistic_expectation
         self.performance_under_stress = rawManagerEval.performance_under_stress
         self.mgr_description = rawManagerEval.mgr_description
-        
+
 class Evaluation(Base):
     __tablename__ = 'evaluation'
 
@@ -149,7 +151,7 @@ class Evaluation(Base):
     evalee = relationship(Student, foreign_keys='Evaluation.evalee_id')
     semester = relationship(Semester)
     encryptedManagerEval = relationship(EncryptedManagerEval)
-    
+
     def parse(self, encryptedEval):
         self.evaler_id = encryptedEval.evaler_id
         self.evalee_id = encryptedEval.evalee_id
@@ -165,7 +167,7 @@ class Evaluation(Base):
         self.evalee = encryptedEval.evalee
         self.semester = encryptedEval.semester
         self.encryptedManagerEval = encryptedEval.encryptedManagerEval
-        
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -178,7 +180,7 @@ class Evaluation(Base):
             'description': self.description,
             'adjective': self.adjective,
         }
-        
+
 class EncryptedEvaluation(Base):
     __tablename__ = 'encrypted_evaluation'
 
@@ -196,7 +198,7 @@ class EncryptedEvaluation(Base):
     evalee = relationship(Student, foreign_keys='EncryptedEvaluation.evalee_id')
     semester = relationship(Semester)
     encryptedManagerEval = relationship(EncryptedManagerEval)
-    
+
     def parse(self, rawEval):
         self.evaler_id = rawEval.evaler_id
         self.evalee_id = rawEval.evalee_id
@@ -212,7 +214,7 @@ class EncryptedEvaluation(Base):
         self.evalee = rawEval.evalee
         self.semester = rawEval.semester
         self.encryptedManagerEval = rawEval.encryptedManagerEval
-        
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -225,15 +227,15 @@ class EncryptedEvaluation(Base):
             'description': self.description,
             'adjective': self.adjective,
         }
-        
-    
+
+
 class Enrollment(Base):
     __tablename__ = 'enrollment'
     student_id = Column(VARCHAR(10), ForeignKey('student.user_name', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
     semester_id = Column(Integer, ForeignKey('semester.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
     student = relationship(Student)
     semester = relationship(Semester)
-    
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -260,7 +262,7 @@ class Groups(Base):
             'semester_id': self.semester_id,
             'name': self.name,
         }
-    
+
 class Group_Student(Base):
     __tablename__ = 'group_student'
     group_id = Column(Integer, ForeignKey('groups.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
@@ -288,7 +290,7 @@ class ManagerEvalForm(WTForm):
     encourage_team_development = RadioField('Encourage Team Development', choices=choices, validators=[Optional()])
     realistic_expectation = RadioField('Realistic Expectation', choices=choices, validators=[Optional()])
     performance_under_stress = RadioField('Performance Under Stress', choices=choices, validators=[Optional()])
-    
+
 class EvalForm(WTForm):
     evaler_id = HiddenField('evaler_id', validators=[Required()])
     evalee_id = HiddenField('evalee_id', validators=[Required()])
@@ -302,32 +304,32 @@ class EvalForm(WTForm):
     description = TextAreaField('Description', validators=[Required(), Length(max=4096)])
     is_manager = IntegerField('is_manager', validators=[Optional()])
     managerEval = FormField(ManagerEvalForm)
-    
-        
+
+
 class EvalListForm(Form):
     evaluations = FieldList(FormField(EvalForm))
     error = HiddenField('error', validators=[Optional()])
-    
+
     def validate(self):
         if not Form.validate(self):
             return False
-            
+
         result = True
         sum_of_tokens = 0
         ranksArray = []
         num_of_evals = len(self.evaluations)
-        
+
         for field in self.evaluations:
             sum_of_tokens = sum_of_tokens + field['tokens'].data
             ranksArray.append(field['rank'].data)
             is_manager = field['is_manager'].data
             if(is_manager == 1):
-                result = self.validateManagerForm(field['managerEval'])            
-            
+                result = self.validateManagerForm(field['managerEval'])
+
         if sum_of_tokens != 100:
             flash('Sum of Tokens should be 100.')
             result = False
-        
+
         ranksArray.sort()
         if len(ranksArray)!=len(set(ranksArray)):
             flash('Duplicate ranks are NOT allowed.')
@@ -335,7 +337,7 @@ class EvalListForm(Form):
         if ranksArray[0] != 1 or ranksArray[num_of_evals-1] != num_of_evals:
             flash('Ranks should be assigned from 1 to N.')
             result = False
-            
+
         return result
 
     def validateManagerForm(self, managerEval):
@@ -345,7 +347,7 @@ class EvalListForm(Form):
                 field.errors.append('Invalid Selection')
                 result = False
         return result
-    
+
 class ResetPassword(Form):
     user_name = TextField('User Name', validators=[Required()])
 
@@ -353,8 +355,8 @@ class ResetPasswordSubmit(Form):
     user_name = HiddenField('user_name')
     password = PasswordField('New Password', validators=[Required()])
     confirm = PasswordField('Confirm Password', validators=[Required()])
-    
-if __name__ == '__main__':    
+
+if __name__ == '__main__':
     parser = SafeConfigParser()
     parser.read('config.ini')
     username = parser.get('login', 'username')
@@ -363,7 +365,7 @@ if __name__ == '__main__':
     host = parser.get('login', 'host')
     port = parser.get('login', 'port')
 
-    engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema) 
+    engine = create_engine('mysql://' + "root" + ':' + "password" + '@' + host +':' + port + '/' + schema)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Base.metadata.tables["evaluation"].drop(bind = engine)
