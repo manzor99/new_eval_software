@@ -40,3 +40,19 @@
 [2018-11-11 13:16:07,963] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'adam'@'localhost' (using password: YES)") None None
 [2018-11-11 13:16:27,387] {student_eval.py:399} ERROR - 'Session' object has no attribute 'querty'
 [2018-11-11 13:18:11,805] {student_eval.py:399} ERROR - 'Query' object has no attribute 'group_id'
+[2018-11-11 13:21:47,346] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'user'@'localhost' (using password: YES)") None None
+[2018-11-11 13:25:00,715] {student_eval.py:399} ERROR - 'Group_Student' object has no attribute 'user_name'
+[2018-11-11 13:40:45,037] {student_eval.py:399} ERROR - 'list' object has no attribute 'add'
+[2018-11-11 13:40:56,893] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 13:47:07,430] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 13:47:25,701] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 13:49:23,597] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 13:50:24,945] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 13:54:50,326] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 14:05:02,755] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 14:05:09,068] {student_eval.py:399} ERROR - 'NoneType' object has no attribute 'first'
+[2018-11-11 14:08:51,592] {student_eval.py:399} ERROR - global name 'newTeamMembers' is not defined
+[2018-11-11 14:14:31,950] {student_eval.py:399} ERROR - cannot concatenate 'str' and 'int' objects
+[2018-11-11 14:17:53,306] {student_eval.py:399} ERROR - list index out of range
+[2018-11-11 14:18:30,263] {student_eval.py:399} ERROR - list index out of range
+[2018-11-11 14:22:46,720] {student_eval.py:399} ERROR - list index out of range

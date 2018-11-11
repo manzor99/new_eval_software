@@ -403,7 +403,7 @@ def unhandled_exception(e):
 
 @app.route('/team/<username>', methods=['GET', 'POST'])
 def teamJson(username = ""):
-    engine = create_engine('mysql+pymysql://' + "user" + ':' + "pass" + '@localhost:3306/evaluation', poolclass=NullPool)
+    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
 
     engine.connect()
     Base.metadata.bind = engine
@@ -415,7 +415,38 @@ def teamJson(username = ""):
 
     teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
 
-    return str(teamNumber)
+    groupStudent = dbSession.query(Group_Student).filter_by(group_id=teamNumber).all()
+    newGroupStudent = []
+
+    for member in groupStudent:
+        if student.user_name != member.student_id:
+            newGroupStudent.append(member)
+
+    studentData = []
+
+    for member in newGroupStudent:
+        print(member.student_id)
+        studentData.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
+
+    jsonArray = []
+#username first last manager
+    for i in range(len(studentData)):
+        print(studentData[i])
+        jsonStr = "{username:" + studentData[i].user_name
+        jsonStr += ",firstName:" + studentData[i].first_name
+        jsonStr += ",lastName:" + studentData[i].last_name
+        jsonStr += ",isManager:" + str(newGroupStudent[i].is_manager)
+        jsonStr += "}"
+        jsonArray.append(jsonStr)
+
+    finalJson = "{"
+    print("len json array =", str(len(jsonArray)))
+    for jsonObject in jsonArray:
+        finalJson += jsonObject + ","
+
+    finalJson = finalJson[0:len(finalJson)-2] + "}" #removes comma at end and adds close brace
+
+    return str(finalJson)
 
 
 
