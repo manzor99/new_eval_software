@@ -401,9 +401,8 @@ def unhandled_exception(e):
 
 #***********************************************************************************************************************************************
 
-@app.route('/student/<name>', methods=['GET', 'POST'])
-def studentJson(name = ""):
-    return '{name:rocco,semester:fall18}'
+@app.route('/team/<username>', methods=['GET', 'POST'])
+def teamJson(username = ""):
     engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
 
     engine.connect()
@@ -412,10 +411,9 @@ def studentJson(name = ""):
     dbSession = DBSession()
 
     evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
+    student = dbSession.query(Student).filter_by(user_name = username).first()
 
-    semester = dbSession.query(Student).filter_by(id = id, week = week, semester_id = semester_id, name = name).all()
-
-    return '{name:rocco,semester:fall18}'
+    return student.user_name
 
 
 

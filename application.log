@@ -30,3 +30,10 @@
 [2018-11-11 12:15:01,381] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
 [2018-11-11 12:34:34,029] {student_eval.py:416} ERROR - studentJson() takes no arguments (1 given)
 [2018-11-11 12:34:41,065] {student_eval.py:416} ERROR - studentJson() takes no arguments (1 given)
+[2018-11-11 13:01:06,702] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'rmanzo'@'localhost' (using password: YES)") None None
+[2018-11-11 13:01:46,942] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'rmanzo'@'localhost' (using password: YES)") None None
+[2018-11-11 13:02:24,000] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'rmanzo'@'localhost' (using password: YES)") None None
+[2018-11-11 13:02:26,273] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'rmanzo'@'localhost' (using password: YES)") None None
+[2018-11-11 13:03:05,954] {student_eval.py:399} ERROR - global name 'semester' is not defined
+[2018-11-11 13:03:19,746] {student_eval.py:399} ERROR - list index out of range
+[2018-11-11 13:06:10,964] {student_eval.py:399} ERROR - 'Student' object does not support indexing
