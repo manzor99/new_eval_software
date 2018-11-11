@@ -403,7 +403,7 @@ def unhandled_exception(e):
 
 @app.route('/team/<username>', methods=['GET', 'POST'])
 def teamJson(username = ""):
-    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
+    engine = create_engine('mysql+pymysql://' + "user" + ':' + "pass" + '@localhost:3306/evaluation', poolclass=NullPool)
 
     engine.connect()
     Base.metadata.bind = engine
@@ -413,7 +413,9 @@ def teamJson(username = ""):
     evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
     student = dbSession.query(Student).filter_by(user_name = username).first()
 
-    return student.user_name
+    teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
+
+    return str(teamNumber)
 
 
 

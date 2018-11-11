@@ -37,3 +37,6 @@
 [2018-11-11 13:03:05,954] {student_eval.py:399} ERROR - global name 'semester' is not defined
 [2018-11-11 13:03:19,746] {student_eval.py:399} ERROR - list index out of range
 [2018-11-11 13:06:10,964] {student_eval.py:399} ERROR - 'Student' object does not support indexing
+[2018-11-11 13:16:07,963] {student_eval.py:399} ERROR - (OperationalError) (1045, u"Access denied for user 'adam'@'localhost' (using password: YES)") None None
+[2018-11-11 13:16:27,387] {student_eval.py:399} ERROR - 'Session' object has no attribute 'querty'
+[2018-11-11 13:18:11,805] {student_eval.py:399} ERROR - 'Query' object has no attribute 'group_id'
