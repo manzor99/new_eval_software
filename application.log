@@ -1,0 +1,32 @@
+[2018-11-09 15:26:44,757] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-09 15:26:44,757] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-09 15:26:44,758] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-09 15:26:44,769] {student_eval.py:271} DEBUG - Attempting User login: adam
+[2018-11-09 15:26:44,769] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-09 15:26:55,166] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-09 15:26:55,166] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-09 15:26:55,166] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-09 15:26:55,167] {student_eval.py:271} DEBUG - Attempting User login: bob
+[2018-11-09 15:26:55,167] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-10 13:08:15,342] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-10 13:08:15,343] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-10 13:08:15,343] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-10 13:08:15,351] {student_eval.py:271} DEBUG - Attempting User login: adam
+[2018-11-10 13:08:15,352] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-10 13:21:11,031] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-10 13:21:11,032] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-10 13:21:11,032] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-10 13:21:11,032] {student_eval.py:271} DEBUG - Attempting User login: adam
+[2018-11-10 13:21:11,032] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-10 13:21:32,657] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-10 13:21:32,657] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-10 13:21:32,657] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-10 13:21:32,669] {student_eval.py:271} DEBUG - Attempting User login: adam
+[2018-11-10 13:21:32,670] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-11 12:15:01,226] {student_eval.py:120} DEBUG - Attempting DB connection via: "root"
+[2018-11-11 12:15:01,227] {student_eval.py:125} DEBUG - global name 'DBSession' is not defined
+[2018-11-11 12:15:01,227] {student_eval.py:126} ERROR - global name 'DBSession' is not defined
+[2018-11-11 12:15:01,361] {student_eval.py:271} DEBUG - Attempting User login: adam
+[2018-11-11 12:15:01,381] {student_eval.py:290} ERROR - 'NoneType' object has no attribute 'query'
+[2018-11-11 12:34:34,029] {student_eval.py:416} ERROR - studentJson() takes no arguments (1 given)
+[2018-11-11 12:34:41,065] {student_eval.py:416} ERROR - studentJson() takes no arguments (1 given)

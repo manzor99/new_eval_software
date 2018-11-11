@@ -399,6 +399,30 @@ def unhandled_exception(e):
     app.logger.error(e)
     return render_template("error.html")
 
+#***********************************************************************************************************************************************
+
+@app.route('/student/<name>', methods=['GET', 'POST'])
+def studentJson(name = ""):
+    return '{name:rocco,semester:fall18}'
+    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
+
+    engine.connect()
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(autoflush=True, bind=engine)
+    dbSession = DBSession()
+
+    evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
+
+    semester = dbSession.query(Student).filter_by(id = id, week = week, semester_id = semester_id, name = name).all()
+
+    return '{name:rocco,semester:fall18}'
+
+
+
+
+#***********************************************************************************************************************************************
+
+
 if __name__ == '__main__':
     context = (cer, ssl_key)
     app.debug = True
