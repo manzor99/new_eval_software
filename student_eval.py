@@ -1,12 +1,15 @@
 import sys
-sys.path.append("lib/python2.7/site-packages/")
+import os
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib\\python2.7\\site-packages'))
+# sys.path.append("./lib/python2.7/site-packages/")
+sys.path.append(lib_path)
 
 from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 import os
-from flask import Flask, flash, render_template, url_for, request, redirect, session
+from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify
 from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
@@ -88,15 +91,7 @@ app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
 app.permanent_session_lifetime = timedelta(seconds=10800)
 
 mail = Mail(app)
-#<<<<<<< Updated upstream
-dbSession = None
-#=======
-#should have smaller pool_recycle that wait_timeout=28800
-#engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, pool_recycle=3600)
-#Base.metadata.bind = engine
-#DBSession = sessionmaker(bind=engine)
-#dbSession = DBSession()
-#>>>>>>> Stashed changes
+
 #print 'key:', key
 evalCipher = EvalCipher(key)
 urlSerializer = URLSafeSerializer(key)
@@ -166,9 +161,19 @@ def list_all():
                     #fix bug where bad characters break capture
                     #print eval['description'].data
                     eval['description'].data = eval['description'].data.encode('utf8')
+
                     #print eval['description'].data
 
-                    evaluation = Evaluation(evaler=evaler, evalee=evalee, week=eval['week'].data, rank=eval['rank'].data, token=eval['tokens'].data, description=eval['description'].data, adjective=eval['adjective'].data, encryptedManagerEval=encryptedManagerEval, semester=semester)
+                    evaluation = Evaluation(evaler=evaler,
+                                            evalee=evalee,
+                                            week=eval['week'].data,
+                                            rank=eval['rank'].data,
+                                            token=eval['tokens'].data,
+                                            description=eval['description'].data,
+                                            adjective=eval['adjective'].data,
+                                            encryptedManagerEval=encryptedManagerEval,
+                                            semester=semester)
+
                     evals.append(evaluation)
                     #print "here"
                 for e in evals:
@@ -400,60 +405,205 @@ def unhandled_exception(e):
     return render_template("error.html")
 
 #***********************************************************************************************************************************************
+# teamJson creates a Json of all the students except the logged in student to be used by the web application
+# to create the list of evalees using the username provided
 
-@app.route('/team/<username>', methods=['GET', 'POST'])
-def teamJson(username = ""):
-    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
+@app.route('/team/<username>',  methods=('GET',))
+def teamJsonGET(username = ""):
+    try:
+        engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
 
-    engine.connect()
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(autoflush=True, bind=engine)
-    dbSession = DBSession()
+        engine.connect()
+        Base.metadata.bind = engine
+        DBSession = sessionmaker(autoflush=True, bind=engine)
+        dbSession = DBSession()
 
-    evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
-    student = dbSession.query(Student).filter_by(user_name = username).first()
+        evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
+        student = dbSession.query(Student).filter_by(user_name = username).first()
 
-    teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
+        teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
 
-    groupStudent = dbSession.query(Group_Student).filter_by(group_id=teamNumber).all()
-    newGroupStudent = []
+        groupStudent = dbSession.query(Group_Student).filter_by(group_id=teamNumber).all()
+        newGroupStudent = []
 
-    for member in groupStudent:
-        if student.user_name != member.student_id:
-            newGroupStudent.append(member)
+        for member in groupStudent:
+            if student.user_name != member.student_id:
+                newGroupStudent.append(member)
 
-    studentData = []
+        studentData = []
 
-    for member in newGroupStudent:
-        print(member.student_id)
-        studentData.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
+        for member in newGroupStudent:
+            print(member.student_id)
+            studentData.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
 
-    jsonArray = []
-#username first last manager
-    for i in range(len(studentData)):
-        print(studentData[i])
-        jsonStr = "{username:" + studentData[i].user_name
-        jsonStr += ",firstName:" + studentData[i].first_name
-        jsonStr += ",lastName:" + studentData[i].last_name
-        jsonStr += ",isManager:" + str(newGroupStudent[i].is_manager)
-        jsonStr += "}"
-        jsonArray.append(jsonStr)
+        jsonArray = []
+    #username first last manager
+        for i in range(len(studentData)):
+            print(studentData[i])
+            jsonStr = '\"evalee' + str(i) + '\": ' + '{"username": "' + studentData[i].user_name + '"'
+            jsonStr += ',"firstName": "' + studentData[i].first_name + '"'
+            jsonStr += ',"lastName": "' + studentData[i].last_name + '"'
+            jsonStr += ',"isManager": "' + str(newGroupStudent[i].is_manager) + '"'
+            jsonStr += ',"evaluation": { "rank":-1 , "tokens":-1 , "description":-1 , "adjective":-1}'
+            jsonStr += "}"
+            jsonArray.append(jsonStr)
 
-    finalJson = "{"
-    print("len json array =", str(len(jsonArray)))
-    for jsonObject in jsonArray:
-        finalJson += jsonObject + ","
+        jsonArray.append('"goodAjectives": ' + str(GOOD_ADJECTIVES).replace("'", '"'))
+        jsonArray.append('"BadAjectives": ' + str(BAD_ADJECTIVES).replace("'", '"'))
+        finalJson = '{'
+        print("len json array =", str(len(jsonArray)))
+        for jsonObject in jsonArray:
+            finalJson += jsonObject + ","
 
-    finalJson = finalJson[0:len(finalJson)-2] + "}" #removes comma at end and adds close brace
+        finalJson = finalJson[0:len(finalJson)-2] + "]}" #removes comma at end and adds close brace
+    except Exception as e:
+        return jsonify({ "error": e }), 500
 
-    return str(finalJson)
+    # return json.dumps(finalJson.replace('\\','')), 200
+    return finalJson, 200
 
 
 
 
 #***********************************************************************************************************************************************
 
+@app.route('/evaluations',  methods=('POST',))
+def teamEvaluationsPOST():
+    if not session.get('app_user'):
+        clear_DBsession()
+        app.logger.debug('clear_DBsession')
+        return jsonify({ "error": "" }), 500
+    username = session['app_user']
+    app.logger.debug('Currently logged in user : '+ username)
 
+    evaluations = request.get_json()
+
+    evals = []
+
+    evaler = dbSession.query(Student).filter_by(user_name=username).first()
+    semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
+
+    for eval in evaluations:
+        evalee = dbSession.query(Student).filter_by(user_name=eval.get('username')).first()
+
+        encryptedManagerEval = None
+        # if eval['isManager'] == 1:
+        #     print "inside is_manager"
+        #     managerEval = Manager_Eval(approachable_attitude = eval['managerEval']['approachable'].data,
+        #                 team_communication = eval['managerEval']['communication'].data,
+        #                 client_interaction = eval['managerEval']['client_interaction'].data,
+        #                 decision_making = eval['managerEval']['decision_making'].data,
+        #                 resource_utilization = eval['managerEval']['resource_utilization'].data,
+        #                 follow_up_to_completion = eval['managerEval']['follow_up_to_completion'].data,
+        #                 task_delegation_and_ownership = eval['managerEval']['task_delegation_and_ownership'].data,
+        #                 encourage_team_development = eval['managerEval']['encourage_team_development'].data,
+        #                 realistic_expectation = eval['managerEval']['realistic_expectation'].data,
+        #                 performance_under_stress = eval['managerEval']['performance_under_stress'].data,
+        #                 mgr_description = 'None')
+        #
+        #     encryptedManagerEval = evalCipher.encryptManagerEval(managerEval)
+        #     dbSession.add(encryptedManagerEval)
+
+        # fix bug where bad characters break capture
+        # print eval['description'].data
+        eval['description'] = eval['description'].encode('utf8')
+
+        #print eval['description'].data
+
+        evaluation = Evaluation(evaler=evaler,
+                                evalee=evalee,
+                                # week=eval['week'].data,
+                                rank=eval['rank'],
+                                token=eval['tokens'],
+                                description=eval['description'],
+                                adjective=eval['adjective'],
+                                encryptedManagerEval=encryptedManagerEval,
+                                semester=semester)
+
+        evals.append(evaluation)
+        #print "here"
+    for e in evals:
+        encryptedEval = evalCipher.encryptEval(e)
+        dbSession.add(encryptedEval)
+    try:
+        dbSession.commit()
+    except exc.InvalidRequestError as e:
+        dbSession.rollback()
+        app.logger.error(e)
+        app.logger.error('Rolling back invalid transaction.')
+        return jsonify({ "error": e }), 500
+    app.logger.debug('dbsession commit')
+    clear_session()
+    return jsonify({"success" : "evaluation updated in db successfully"}), 200
+
+    # return render_template('eval-success.html', week=form.evaluations[0]['week'].data)
+
+
+    # semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
+    #
+    # max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
+    # number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation).filter(EncryptedEvaluation.week == max_week, EncryptedEvaluation.evaler_id == app_user, EncryptedEvaluation.semester == semester).count()
+    #
+    # if number_of_evaluations_submitted > 0:
+    #     app.logger.debug( "number_of_evaluations_submitted > 0"  )
+    #
+    #     clear_session( ) #app_user )
+    #     return render_template('resubmitError.html', week=max_week.scalar())
+    #
+    # #Aliased is not working
+    # evaler = aliased(Group_Student)
+    # evalee = aliased(Group_Student)
+    #
+    # #TODO need to find a way to filter out students who are not ative from these results, specifically the groups
+    # #jasonayoder 9/9/2016
+    #
+    #
+    # sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'), Group_Student.student_id).filter(Groups.id==Group_Student.group_id, Groups.week==max_week, Groups.semester==semester).subquery()
+    #
+    # #Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
+    # limit = 0
+    # if LIMIT_EVALS_TO_CURRENT_WEEK == 'True':
+    #     limit = max_week
+    #
+    # sub_student_evals = dbSession.query(Groups.week, Groups.id, evaler.student_id.label('EVALER_ID'), evalee.student_id.label('EVALEE_ID')).filter(Groups.id==evaler.group_id, evaler.group_id==evalee.group_id, evaler.student_id<>evalee.student_id, evaler.student_id==app_user, Groups.semester==semester, Groups.week >= limit).order_by(Groups.week, evaler.student_id, evalee.student_id).subquery()
+    #
+    # current_evals = dbSession.query(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).filter(sub_groups.c.week >= sub_student_evals.c.week, sub_groups.c.student_id == sub_student_evals.c.EVALER_ID).group_by(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).order_by(sub_groups.c.week, sub_student_evals.c.EVALER_ID).subquery()
+    #
+    #
+    #
+    # #get the maximum
+    # max_week_group_ids = dbSession.query(Groups.id).filter(Groups.week==max_week, Groups.semester==semester).subquery()
+    #
+    #
+    # current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager).filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager==1).subquery()
+    #
+    #
+    # form_evals = dbSession.query(current_evals.c.WEEK, current_evals.c.EVALEE_ID, Student.first_name, Student.last_name, current_managers.c.is_manager).join(Student, current_evals.c.EVALEE_ID==Student.user_name).outerjoin(current_managers, current_evals.c.EVALEE_ID==current_managers.c.student_id).order_by(current_evals.c.EVALEE_ID).all()
+    #
+    #
+    #
+    # evalData = {'evaluations': form_evals}
+    # form = EvalListForm(data=MultiDict(evalData))
+    #
+    # #put information in the form for the current week and the current evaluator
+    # for x, y in itertools.izip(form_evals,form.evaluations):
+    #   y.evalee_id.data = x.EVALEE_ID
+    #   y.evaler_id.data = app_user
+    #   y.week.data = x.WEEK
+    #   y.is_manager.data = x.is_manager
+    #   y.evalee_fname.data = x.first_name
+    #   y.evalee_lname.data = x.last_name
+    #
+    #
+    #
+    # return render_template(
+    #    'eval.html',
+    #    form = form,
+    #    ga=GOOD_ADJECTIVES,
+    #    ba=BAD_ADJECTIVES)
+
+
+#***********************************************************************************************************************************************
 if __name__ == '__main__':
     context = (cer, ssl_key)
     app.debug = True

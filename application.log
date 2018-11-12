@@ -56,3 +56,17 @@
 [2018-11-11 14:17:53,306] {student_eval.py:399} ERROR - list index out of range
 [2018-11-11 14:18:30,263] {student_eval.py:399} ERROR - list index out of range
 [2018-11-11 14:22:46,720] {student_eval.py:399} ERROR - list index out of range
+[2018-11-11 18:44:40,253] {student_eval.py:404} ERROR - (pymysql.err.OperationalError) (1045, u"Access denied for user 'ppaithan'@'localhost' (using password: YES)") (Background on this error at: http://sqlalche.me/e/e3q8)
+[2018-11-11 18:44:58,164] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:52:29,526] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:52:42,690] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:53:09,575] {student_eval.py:313} DEBUG - Clearing DB Session...
+[2018-11-11 20:53:09,579] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:53:17,721] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:55:18,677] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 20:55:30,690] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-11 21:00:49,647] {student_eval.py:405} ERROR - global name 'dbSession' is not defined
+[2018-11-11 21:06:00,890] {student_eval.py:405} ERROR - global name 'dbSession' is not defined
+[2018-11-11 21:06:22,539] {student_eval.py:405} ERROR - global name 'dbSession' is not defined
+[2018-11-12 00:10:53,698] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
+[2018-11-12 13:47:03,522] {student_eval.py:404} ERROR - TypeError("cannot concatenate 'str' and 'list' objects",) is not JSON serializable
