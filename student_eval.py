@@ -33,7 +33,7 @@ import socket
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import timedelta
-
+from flask_cors import CORS, cross_origin
 #for https
 from OpenSSL import SSL
 
@@ -410,6 +410,7 @@ def unhandled_exception(e):
 # to create the list of evalees using the username provided
 
 @app.route('/team/<app_user>',  methods=('GET',))
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def teamJsonGET(app_user = ""):
 
     if dbSession is None:
