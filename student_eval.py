@@ -91,6 +91,7 @@ app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
 app.permanent_session_lifetime = timedelta(seconds=10800)
 
 mail = Mail(app)
+dbSession = None
 
 #print 'key:', key
 evalCipher = EvalCipher(key)
@@ -408,18 +409,15 @@ def unhandled_exception(e):
 # teamJson creates a Json of all the students except the logged in student to be used by the web application
 # to create the list of evalees using the username provided
 
-@app.route('/team/<username>',  methods=('GET',))
-def teamJsonGET(username = ""):
-    try:
-        engine = create_engine('mysql+pymysql://' + username + ':' + password + '@localhost:3306/evaluation', poolclass=NullPool)
+@app.route('/team/<app_user>',  methods=('GET',))
+def teamJsonGET(app_user = ""):
 
-        engine.connect()
-        Base.metadata.bind = engine
-        DBSession = sessionmaker(autoflush=True, bind=engine)
-        dbSession = DBSession()
+    if dbSession is None:
+        init_dbSession()
+    try:
 
         evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
-        student = dbSession.query(Student).filter_by(user_name = username).first()
+        student = dbSession.query(Student).filter_by(user_name = app_user).first()
 
         teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
 
@@ -509,6 +507,8 @@ def teamEvaluationsPOST():
         eval['description'] = eval['description'].encode('utf8')
 
         #print eval['description'].data
+
+        # TODO: Write logic for the week to find max from the evaluation table or initilize t 1 if empty
 
         evaluation = Evaluation(evaler=evaler,
                                 evalee=evalee,
