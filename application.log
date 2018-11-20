@@ -70,3 +70,14 @@
 [2018-11-11 21:06:22,539] {student_eval.py:405} ERROR - global name 'dbSession' is not defined
 [2018-11-12 00:10:53,698] {student_eval.py:404} ERROR - global name 'dbSession' is not defined
 [2018-11-12 13:47:03,522] {student_eval.py:404} ERROR - TypeError("cannot concatenate 'str' and 'list' objects",) is not JSON serializable
+[2018-11-18 14:05:30,894] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
+[2018-11-18 14:05:30,915] {student_eval.py:420} DEBUG - Attempting User login: sbaranwa
+[2018-11-18 14:06:39,868] {student_eval.py:420} DEBUG - Attempting User login: ppaithan
+[2018-11-18 14:06:39,884] {student_eval.py:427} ERROR - Invalid Credentials. Please try again.
+[2018-11-18 14:20:02,005] {student_eval.py:420} DEBUG - Attempting User login: ppaithan
+[2018-11-18 14:20:02,019] {student_eval.py:427} ERROR - Invalid Credentials. Please try again.
+[2018-11-18 14:20:16,112] {student_eval.py:420} DEBUG - Attempting User login: sbaranwa
+[2018-11-18 14:23:51,253] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
+[2018-11-18 14:23:51,259] {student_eval.py:420} DEBUG - Attempting User login: sbaranwa
+[2018-11-18 16:50:36,877] {student_eval.py:514} DEBUG - Currently logged in user : sbaranwa
+[2018-11-18 16:50:36,891] {student_eval.py:405} ERROR - 'unicode' object has no attribute 'get'

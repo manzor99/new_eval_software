@@ -11,5 +11,6 @@ itsdangerous
 datetime
 flask-wtf
 wtforms
+flask_cors
 
-possible more as located in lib
+# possible more as located in lib

@@ -67,7 +67,7 @@ APP_PORT = parser.get('apprun', 'port')
 CURRENT_SEASON = parser.get('currentsem', 'season')
 CURRENT_YEAR = int(parser.get('currentsem', 'year'))
 CURRENT_COURSE_NO = parser.get('currentsem', 'course_no')
-
+CURRENT_WEEK = date(parser.get('currentsem', 'first_monday'))
 LOGGING_LEVEL = parser.get('logs', 'LOGGING_LEVEL')
 
 GOOD_ADJECTIVES = parser.get('adjectives', 'GOOD_ADJECTIVES').replace(' ','').split(",")
@@ -110,6 +110,7 @@ try:
     DBSession = sessionmaker(autoflush=True, bind=engine)
 except Exception as e:
     app.logger.error(e)
+
 
 def init_dbSession():
     global dbSession
@@ -159,12 +160,7 @@ def list_all():
                         encryptedManagerEval = evalCipher.encryptManagerEval(managerEval)
                         dbSession.add(encryptedManagerEval)
 
-                    #fix bug where bad characters break capture
-                    #print eval['description'].data
                     eval['description'].data = eval['description'].data.encode('utf8')
-
-                    #print eval['description'].data
-
                     evaluation = Evaluation(evaler=evaler,
                                             evalee=evalee,
                                             week=eval['week'].data,
@@ -176,7 +172,6 @@ def list_all():
                                             semester=semester)
 
                     evals.append(evaluation)
-                    #print "here"
                 for e in evals:
                     encryptedEval = evalCipher.encryptEval(e)
                     dbSession.add(encryptedEval)
@@ -198,57 +193,87 @@ def list_all():
             if dbSession is not None:
                 dbSession.rollback()
             clear_DBsession()
-            #app.logger.debug(e)
             app.logger.error(e)
             return render_template("error.html")
 
-    semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
-
+    # get the maxweek from the groups table in database
     max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
-    number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation).filter(EncryptedEvaluation.week == max_week, EncryptedEvaluation.evaler_id == app_user, EncryptedEvaluation.semester == semester).count()
+    number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation)\
+                                                .filter(EncryptedEvaluation.week == max_week,
+                                                        EncryptedEvaluation.evaler_id == app_user,
+                                                        EncryptedEvaluation.semester == semester)\
+                                                .count()
 
+    # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
     if number_of_evaluations_submitted > 0:
-        app.logger.debug( "number_of_evaluations_submitted > 0"  )
-
-        clear_session( ) #app_user )
+        app.logger.debug("number_of_evaluations_submitted > 0")
+        clear_session()
         return render_template('resubmitError.html', week=max_week.scalar())
 
-    #Aliased is not working
+    # Aliasing is used for using an alias name for the tables to make writing queries easier; SQLAlchemy
     evaler = aliased(Group_Student)
     evalee = aliased(Group_Student)
+    sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'),
+                                 Group_Student.student_id).filter(Groups.id == Group_Student.group_id,
+                                                                  Groups.week == max_week,
+                                                                  Groups.semester == semester).subquery()
 
-    #TODO need to find a way to filter out students who are not ative from these results, specifically the groups
-    #jasonayoder 9/9/2016
-
-
-    sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'), Group_Student.student_id).filter(Groups.id==Group_Student.group_id, Groups.week==max_week, Groups.semester==semester).subquery()
-
-    #Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
+    # Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
     limit = 0
     if LIMIT_EVALS_TO_CURRENT_WEEK == 'True':
         limit = max_week
+    sub_student_evals = dbSession.query(Groups.week,
+                                        Groups.id,
+                                        evaler.student_id.label('EVALER_ID'),
+                                        evalee.student_id.label('EVALEE_ID'))\
+                                .filter(Groups.id==evaler.group_id,
+                                        evaler.group_id == evalee.group_id,
+                                        evaler.student_id <> evalee.student_id,
+                                        evaler.student_id == app_user,
+                                        Groups.semester == semester, Groups.week >= limit)\
+                                .order_by(Groups.week,
+                                          evaler.student_id,
+                                          evalee.student_id)\
+                                .subquery()
 
-    sub_student_evals = dbSession.query(Groups.week, Groups.id, evaler.student_id.label('EVALER_ID'), evalee.student_id.label('EVALEE_ID')).filter(Groups.id==evaler.group_id, evaler.group_id==evalee.group_id, evaler.student_id<>evalee.student_id, evaler.student_id==app_user, Groups.semester==semester, Groups.week >= limit).order_by(Groups.week, evaler.student_id, evalee.student_id).subquery()
-
-    current_evals = dbSession.query(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).filter(sub_groups.c.week >= sub_student_evals.c.week, sub_groups.c.student_id == sub_student_evals.c.EVALER_ID).group_by(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).order_by(sub_groups.c.week, sub_student_evals.c.EVALER_ID).subquery()
-
-
-
-    #get the maximum
-    max_week_group_ids = dbSession.query(Groups.id).filter(Groups.week==max_week, Groups.semester==semester).subquery()
-
-
-    current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager).filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager==1).subquery()
-
-
-    form_evals = dbSession.query(current_evals.c.WEEK, current_evals.c.EVALEE_ID, Student.first_name, Student.last_name, current_managers.c.is_manager).join(Student, current_evals.c.EVALEE_ID==Student.user_name).outerjoin(current_managers, current_evals.c.EVALEE_ID==current_managers.c.student_id).order_by(current_evals.c.EVALEE_ID).all()
+    current_evals = dbSession.query(sub_groups.c.week.label('WEEK'),
+                                    sub_student_evals.c.EVALER_ID,
+                                    sub_student_evals.c.EVALEE_ID)\
+                            .filter(sub_groups.c.week >= sub_student_evals.c.week,
+                                    sub_groups.c.student_id == sub_student_evals.c.EVALER_ID)\
+                            .group_by(sub_groups.c.week.label('WEEK'),
+                                      sub_student_evals.c.EVALER_ID,
+                                      sub_student_evals.c.EVALEE_ID)\
+                            .order_by(sub_groups.c.week,
+                                      sub_student_evals.c.EVALER_ID)\
+                            .subquery()
 
 
+
+    # get the group ids for the current week(max week in the groups table)
+    max_week_group_ids = dbSession.query(Groups.id)\
+                                    .filter(Groups.week == max_week, Groups.semester == semester)\
+                                    .subquery()
+    current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager)\
+                                .filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager == 1)\
+                                .subquery()
+    # create the
+    form_evals = dbSession.query(current_evals.c.WEEK,
+                                 current_evals.c.EVALEE_ID,
+                                 Student.first_name,
+                                 Student.last_name,
+                                 current_managers.c.is_manager)\
+                        .join(Student,
+                              current_evals.c.EVALEE_ID == Student.user_name)\
+                        .outerjoin(current_managers,
+                                   current_evals.c.EVALEE_ID == current_managers.c.student_id)\
+                        .order_by(current_evals.c.EVALEE_ID)\
+                        .all()
 
     evalData = {'evaluations': form_evals}
     form = EvalListForm(data=MultiDict(evalData))
 
-    #put information in the form for the current week and the current evaluator
+    # put information in the form for the current week and the current evaluator
     for x, y in itertools.izip(form_evals,form.evaluations):
       y.evalee_id.data = x.EVALEE_ID
       y.evaler_id.data = app_user
@@ -257,45 +282,39 @@ def list_all():
       y.evalee_fname.data = x.first_name
       y.evalee_lname.data = x.last_name
 
+    return render_template('eval.html',form = form,ga=GOOD_ADJECTIVES,ba=BAD_ADJECTIVES)
 
-
-    return render_template(
-       'eval.html',
-       form = form,
-       ga=GOOD_ADJECTIVES,
-       ba=BAD_ADJECTIVES)
-
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        if dbSession is None:
-            init_dbSession()
-
-        try:
-            app.logger.debug('Attempting User login: '+ request.form['username'])
-            app_user = request.form['username']
-            app_user_pwd = request.form['password']
-            users = dbSession.query(Student).all()
-            isAuthentic = dbSession.query(exists().where(and_(Student.user_name==app_user, Student.login_pwd==app_user_pwd))).scalar()
-
-            if isAuthentic != True:
-		app.logger.error('Invalid Credentials. Please try again.')
-                error = 'Invalid Credentials. Please try again.'
-            else:
-		app.logger.debug('redirect to list_all')
-                session['app_user'] = app_user
-                return redirect(url_for('list_all'))
-        except exc.InvalidRequestError as e:
-            dbSession.rollback()
-            app.logger.error(e)
-            app.logger.error('Rolling back invalid transaction.')
-            return render_template("error.html")
-	except Exception as e:
-            app.logger.error(e)
-            return render_template("error.html")
-    return render_template('index.html', error=error)
+# @app.route('/', methods=['GET', 'POST'])
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     error = None
+#     if request.method == 'POST':
+#         if dbSession is None:
+#             init_dbSession()
+#
+#         try:
+#             app.logger.debug('Attempting User login: '+ request.form['username'])
+#             app_user = request.form['username']
+#             app_user_pwd = request.form['password']
+#             users = dbSession.query(Student).all()
+#             isAuthentic = dbSession.query(exists().where(and_(Student.user_name==app_user, Student.login_pwd==app_user_pwd))).scalar()
+#
+#             if isAuthentic != True:
+# 		        app.logger.error('Invalid Credentials. Please try again.')
+#                 error = 'Invalid Credentials. Please try again.'
+#             else:
+# 		        app.logger.debug('redirect to list_all')
+#                 session['app_user'] = app_user
+#                 return redirect(url_for('list_all'))
+#         except exc.InvalidRequestError as e:
+#             dbSession.rollback()
+#             app.logger.error(e)
+#             app.logger.error('Rolling back invalid transaction.')
+#             return render_template("error.html")
+# 	except Exception as e:
+#             app.logger.error(e)
+#             return render_template("error.html")
+#     return render_template('index.html', error=error)
 
 @app.route('/logout')
 def logout( ):
@@ -350,7 +369,7 @@ def verify_user():
             if pwd == confirm:
                 student = dbSession.query(Student).filter_by(user_name=user_name).update({Student.login_pwd: pwd})
                 try:
-           	    dbSession.commit()
+                    dbSession.commit()
                 except exc.InvalidRequestError as e:
                     dbSession.rollback()
                     app.logger.error(e)
@@ -358,7 +377,7 @@ def verify_user():
                     return render_template("error.html")
                 return redirect(url_for('reset_password_success'))
             else:
-		app.logger.error('Passwords do not match')
+                app.logger.error('Passwords do not match')
                 flash('Passwords do not match.')
     else:
         form = ResetPasswordSubmit()
@@ -382,9 +401,10 @@ def reset_password_success():
 def mail_sender():
     try:
         app.logger.debug('Inside mail_sender')
-	user = urlSerializer.loads(request.args.get('user'))
-        url = urlSerializer.loads(request.args.get('url'))
-        link = "https://" + url['url']
+        user = urlSerializer.loads(request.args.get('user'))
+        # url = urlSerializer.loads(request.args.get('url'))
+        link = "https://"\
+               # + url['url']
         msg = Message("P532/P632 Evaluation Account Password Reset",
                       html=render_template("email-template.html", reset_url=link),
                       recipients=[user['user']])
@@ -405,112 +425,137 @@ def unhandled_exception(e):
     app.logger.error(e)
     return render_template("error.html")
 
+# ***********************************************************************************************************************************************
+
+@app.route('/', methods=['POST'])
+@app.route('/login', methods=['POST'])
+def login():
+    output = jsonify({"error" : None})
+    if dbSession is None:
+        init_dbSession()
+
+    try:
+        profile_information = request.get_json()
+
+        app.logger.debug('Attempting User login: '+ profile_information['username'])
+        app_user = profile_information['username']
+        app_user_pwd = profile_information['password']
+        # users = dbSession.query(Student).all()
+        is_authentic = dbSession.query(exists().where(and_(Student.user_name==app_user, Student.login_pwd==app_user_pwd))).scalar()
+
+        if is_authentic != True:
+            app.logger.error('Invalid Credentials. Please try again.')
+            output['error'] = 'Invalid Credentials. Please try again.'
+            return output, 500
+        else:
+            session['app_user'] = app_user
+            return output, 200
+    except exc.InvalidRequestError as e:
+        dbSession.rollback()
+        app.logger.error(e)
+        output['error'] = e
+        app.logger.error('Rolling back invalid transaction.')
+        return output, 500
+    except Exception as e:
+        app.logger.error(e)
+        output['error'] = e
+        return output, 500
+
+
 #***********************************************************************************************************************************************
+
 # teamJson creates a Json of all the students except the logged in student to be used by the web application
 # to create the list of evalees using the username provided
 
-@app.route('/team/<app_user>',  methods=('GET',))
+@app.route('/team',  methods=('GET',))
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
-def teamJsonGET(app_user = ""):
-
+def team():
+    app_user = session['app_user']
     if dbSession is None:
         init_dbSession()
     try:
+        # Check if the evaluation has already been submitted by the student for the current week
+        # get the maxweek from the groups table in database and the current semester
+        semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
+                                                       course_no=CURRENT_COURSE_NO).first()
+        max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
+        number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation) \
+            .filter(EncryptedEvaluation.week == max_week,
+                    EncryptedEvaluation.evaler_id == app_user,
+                    EncryptedEvaluation.semester == semester) \
+            .count()
 
-        evalCipher = EvalCipher("we_welcome_u_2_fall_2018")
+        # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
+        if number_of_evaluations_submitted > 0:
+            app.logger.debug("number_of_evaluations_submitted > 0")
+            clear_session()
+            return jsonify({"error":"Evaluation already submitted for the current week"}), 500
+
         student = dbSession.query(Student).filter_by(user_name = app_user).first()
+        team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
+        group_student = dbSession.query(Group_Student).filter_by(group_id=team_number).all()
+        new_group_student = []
 
-        teamNumber = dbSession.query(Group_Student).filter_by(student = student).first().group_id
-
-        groupStudent = dbSession.query(Group_Student).filter_by(group_id=teamNumber).all()
-        newGroupStudent = []
-
-        for member in groupStudent:
+        for member in group_student:
             if student.user_name != member.student_id:
-                newGroupStudent.append(member)
+                new_group_student.append(member)
 
-        studentData = []
-
-        for member in newGroupStudent:
+        student_data = []
+        for member in new_group_student:
             print(member.student_id)
-            studentData.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
+            student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
 
-        jsonArray = []
-    #username first last manager
-        for i in range(len(studentData)):
-            print(studentData[i])
-            jsonStr = '\"evalee' + str(i) + '\": ' + '{"username": "' + studentData[i].user_name + '"'
-            jsonStr += ',"firstName": "' + studentData[i].first_name + '"'
-            jsonStr += ',"lastName": "' + studentData[i].last_name + '"'
-            jsonStr += ',"isManager": "' + str(newGroupStudent[i].is_manager) + '"'
-            jsonStr += ',"evaluation": { "rank":-1 , "tokens":-1 , "description":-1 , "adjective":-1}'
-            jsonStr += "}"
-            jsonArray.append(jsonStr)
+        json_array = []
+        for i in range(len(student_data)):
+            print(student_data[i])
+            json_str = '\"evalee' + str(i) + '\": ' + '{"username": "' + student_data[i].user_name + '"'
+            json_str += ',"firstName": "' + student_data[i].first_name + '"'
+            json_str += ',"lastName": "' + student_data[i].last_name + '"'
+            json_str += ',"isManager": "' + str(new_group_student[i].is_manager) + '"'
+            json_str += ',"evaluation": { "rank":-1 , "tokens":-1 , "description":-1 , "adjective":-1}'
+            json_str += "}"
+            json_array.append(json_str)
 
-        jsonArray.append('"goodAjectives": ' + str(GOOD_ADJECTIVES).replace("'", '"'))
-        jsonArray.append('"BadAjectives": ' + str(BAD_ADJECTIVES).replace("'", '"'))
-        finalJson = '{'
-        print("len json array =", str(len(jsonArray)))
-        for jsonObject in jsonArray:
-            finalJson += jsonObject + ","
+        json_array.append('"goodAjectives": ' + str(GOOD_ADJECTIVES).replace("'", '"'))
+        json_array.append('"BadAjectives": ' + str(BAD_ADJECTIVES).replace("'", '"'))
+        final_json = '{'
+        print("len json array =", str(len(json_array)))
+        for json_object in json_array:
+            final_json += json_object + ","
 
-        finalJson = finalJson[0:len(finalJson)-2] + "]}" #removes comma at end and adds close brace
+        final_json = final_json[0:len(final_json)-2] + "]}" #removes comma at end and adds close brace
     except Exception as e:
         return jsonify({ "error": e }), 500
 
-    # return json.dumps(finalJson.replace('\\','')), 200
-    return finalJson, 200
+    return final_json, 200
+
+# ***********************************************************************************************************************************************
 
 
+@app.route('/evaluations',  methods=['POST'])
+def team_evaluations():
+    # calculate the current week using the date of first monday of the semester from the config file
+    curr_week =
 
-
-#***********************************************************************************************************************************************
-
-@app.route('/evaluations',  methods=('POST',))
-def teamEvaluationsPOST():
     if not session.get('app_user'):
         clear_DBsession()
         app.logger.debug('clear_DBsession')
         return jsonify({ "error": "" }), 500
-    username = session['app_user']
-    app.logger.debug('Currently logged in user : '+ username)
+    app_user = session['app_user']
+    app.logger.debug('Currently logged in user : '+ app_user)
 
     evaluations = request.get_json()
-
     evals = []
 
-    evaler = dbSession.query(Student).filter_by(user_name=username).first()
+    evaler = dbSession.query(Student).filter_by(user_name=app_user).first()
     semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
 
-    for eval in evaluations:
+    for eval in evaluations.values():
         evalee = dbSession.query(Student).filter_by(user_name=eval.get('username')).first()
-
-        encryptedManagerEval = None
-        # if eval['isManager'] == 1:
-        #     print "inside is_manager"
-        #     managerEval = Manager_Eval(approachable_attitude = eval['managerEval']['approachable'].data,
-        #                 team_communication = eval['managerEval']['communication'].data,
-        #                 client_interaction = eval['managerEval']['client_interaction'].data,
-        #                 decision_making = eval['managerEval']['decision_making'].data,
-        #                 resource_utilization = eval['managerEval']['resource_utilization'].data,
-        #                 follow_up_to_completion = eval['managerEval']['follow_up_to_completion'].data,
-        #                 task_delegation_and_ownership = eval['managerEval']['task_delegation_and_ownership'].data,
-        #                 encourage_team_development = eval['managerEval']['encourage_team_development'].data,
-        #                 realistic_expectation = eval['managerEval']['realistic_expectation'].data,
-        #                 performance_under_stress = eval['managerEval']['performance_under_stress'].data,
-        #                 mgr_description = 'None')
-        #
-        #     encryptedManagerEval = evalCipher.encryptManagerEval(managerEval)
-        #     dbSession.add(encryptedManagerEval)
-
-        # fix bug where bad characters break capture
-        # print eval['description'].data
         eval['description'] = eval['description'].encode('utf8')
 
-        #print eval['description'].data
 
         # TODO: Write logic for the week to find max from the evaluation table or initilize t 1 if empty
-
         evaluation = Evaluation(evaler=evaler,
                                 evalee=evalee,
                                 # week=eval['week'].data,
@@ -518,11 +563,10 @@ def teamEvaluationsPOST():
                                 token=eval['tokens'],
                                 description=eval['description'],
                                 adjective=eval['adjective'],
-                                encryptedManagerEval=encryptedManagerEval,
+                                encryptedManagerEval=None,
                                 semester=semester)
 
         evals.append(evaluation)
-        #print "here"
     for e in evals:
         encryptedEval = evalCipher.encryptEval(e)
         dbSession.add(encryptedEval)
@@ -537,74 +581,10 @@ def teamEvaluationsPOST():
     clear_session()
     return jsonify({"success" : "evaluation updated in db successfully"}), 200
 
-    # return render_template('eval-success.html', week=form.evaluations[0]['week'].data)
+
+# ***********************************************************************************************************************************************
 
 
-    # semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
-    #
-    # max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
-    # number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation).filter(EncryptedEvaluation.week == max_week, EncryptedEvaluation.evaler_id == app_user, EncryptedEvaluation.semester == semester).count()
-    #
-    # if number_of_evaluations_submitted > 0:
-    #     app.logger.debug( "number_of_evaluations_submitted > 0"  )
-    #
-    #     clear_session( ) #app_user )
-    #     return render_template('resubmitError.html', week=max_week.scalar())
-    #
-    # #Aliased is not working
-    # evaler = aliased(Group_Student)
-    # evalee = aliased(Group_Student)
-    #
-    # #TODO need to find a way to filter out students who are not ative from these results, specifically the groups
-    # #jasonayoder 9/9/2016
-    #
-    #
-    # sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'), Group_Student.student_id).filter(Groups.id==Group_Student.group_id, Groups.week==max_week, Groups.semester==semester).subquery()
-    #
-    # #Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
-    # limit = 0
-    # if LIMIT_EVALS_TO_CURRENT_WEEK == 'True':
-    #     limit = max_week
-    #
-    # sub_student_evals = dbSession.query(Groups.week, Groups.id, evaler.student_id.label('EVALER_ID'), evalee.student_id.label('EVALEE_ID')).filter(Groups.id==evaler.group_id, evaler.group_id==evalee.group_id, evaler.student_id<>evalee.student_id, evaler.student_id==app_user, Groups.semester==semester, Groups.week >= limit).order_by(Groups.week, evaler.student_id, evalee.student_id).subquery()
-    #
-    # current_evals = dbSession.query(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).filter(sub_groups.c.week >= sub_student_evals.c.week, sub_groups.c.student_id == sub_student_evals.c.EVALER_ID).group_by(sub_groups.c.week.label('WEEK'), sub_student_evals.c.EVALER_ID, sub_student_evals.c.EVALEE_ID).order_by(sub_groups.c.week, sub_student_evals.c.EVALER_ID).subquery()
-    #
-    #
-    #
-    # #get the maximum
-    # max_week_group_ids = dbSession.query(Groups.id).filter(Groups.week==max_week, Groups.semester==semester).subquery()
-    #
-    #
-    # current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager).filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager==1).subquery()
-    #
-    #
-    # form_evals = dbSession.query(current_evals.c.WEEK, current_evals.c.EVALEE_ID, Student.first_name, Student.last_name, current_managers.c.is_manager).join(Student, current_evals.c.EVALEE_ID==Student.user_name).outerjoin(current_managers, current_evals.c.EVALEE_ID==current_managers.c.student_id).order_by(current_evals.c.EVALEE_ID).all()
-    #
-    #
-    #
-    # evalData = {'evaluations': form_evals}
-    # form = EvalListForm(data=MultiDict(evalData))
-    #
-    # #put information in the form for the current week and the current evaluator
-    # for x, y in itertools.izip(form_evals,form.evaluations):
-    #   y.evalee_id.data = x.EVALEE_ID
-    #   y.evaler_id.data = app_user
-    #   y.week.data = x.WEEK
-    #   y.is_manager.data = x.is_manager
-    #   y.evalee_fname.data = x.first_name
-    #   y.evalee_lname.data = x.last_name
-    #
-    #
-    #
-    # return render_template(
-    #    'eval.html',
-    #    form = form,
-    #    ga=GOOD_ADJECTIVES,
-    #    ba=BAD_ADJECTIVES)
-
-
-#***********************************************************************************************************************************************
 if __name__ == '__main__':
     context = (cer, ssl_key)
     app.debug = True
