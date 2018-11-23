@@ -425,7 +425,12 @@ def unhandled_exception(e):
     app.logger.error(e)
     return render_template("error.html")
 
-# ***********************************************************************************************************************************************
+# *********************************************************login()******************************************************
+# Description : This method takes in a json consisting of username and password and returns whether the user login is
+#               valid or not.
+# Input : a json consisting of username and password
+# Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
+# **********************************************************************************************************************
 
 @app.route('/', methods=['POST'])
 @app.route('/login', methods=['POST'])
@@ -462,10 +467,12 @@ def login():
         return output, 500
 
 
-#***********************************************************************************************************************************************
-
-# teamJson creates a Json of all the students except the logged in student to be used by the web application
-# to create the list of evalees using the username provided
+#***********************************************************team()******************************************************
+# Description: team() creates a Json of all the students except the logged in student to be used by the web application
+#               to create the list of evalees using the username provided from the student_group table
+# Input : None; uses the username from session information to find the team details
+# Output : returns a json which consists of all the team-members and their respective details
+#***********************************************************************************************************************
 
 @app.route('/team',  methods=('GET',))
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
@@ -529,8 +536,11 @@ def team():
 
     return final_json, 200
 
-# ***********************************************************************************************************************************************
-
+#***********************************************************team_evaluations()******************************************
+# Description: team_evaluations()
+# Input : None; uses the username from session information to find the team details
+# Output : returns a json which consists of all the team-members and their respective details
+#***********************************************************************************************************************
 
 @app.route('/evaluations',  methods=['POST'])
 def team_evaluations():
@@ -548,7 +558,9 @@ def team_evaluations():
     evals = []
 
     evaler = dbSession.query(Student).filter_by(user_name=app_user).first()
-    semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
+    semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR,
+                                                   season=CURRENT_SEASON,
+                                                   course_no=CURRENT_COURSE_NO).first()
 
     for eval in evaluations.values():
         evalee = dbSession.query(Student).filter_by(user_name=eval.get('username')).first()
