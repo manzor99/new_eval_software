@@ -114,8 +114,12 @@ except Exception as e:
 
 def init_dbSession():
     global dbSession
+    global DBSession
     app.logger.debug('Attempting DB connection via: '+ username)
     try:
+        engine.connect()
+        Base.metadata.bind = engine
+        DBSession = sessionmaker(autoflush=True, bind=engine)
         dbSession = DBSession()
         return
     except Exception as e:
