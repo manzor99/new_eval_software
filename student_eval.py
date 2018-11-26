@@ -452,8 +452,9 @@ def mail_sender():
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
 
-@app.route('/', methods=['GET'])
-@app.route('/login', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def login():
     output = {"log" : None, "status_code" : 0}
     if dbSession is None:
@@ -461,6 +462,7 @@ def login():
 
     try:
         profile_information = request.get_json()
+        print(profile_information)
         app.logger.debug('Attempting User login: '+ profile_information['username'])
         app_user = profile_information['username']
         app_user_pwd = profile_information['password']
@@ -591,6 +593,8 @@ def team_evaluations():
     # calculate the current week using the date of first monday of the semester from the config file
     # curr_week =
 
+    if dbSession is None:
+        init_dbSession()
     if not session.get('app_user'):
         clear_DBsession()
         app.logger.debug('clear_DBsession')
@@ -609,7 +613,6 @@ def team_evaluations():
     for eval in evaluations.values():
         evalee = dbSession.query(Student).filter_by(user_name=eval.get('username')).first()
         eval['description'] = eval['description'].encode('utf8')
-
 
         # TODO: Write logic for the week to find max from the evaluation table or initilize t 1 if empty
         evaluation = Evaluation(evaler=evaler,
