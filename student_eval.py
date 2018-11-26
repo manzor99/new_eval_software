@@ -67,7 +67,7 @@ APP_PORT = parser.get('apprun', 'port')
 CURRENT_SEASON = parser.get('currentsem', 'season')
 CURRENT_YEAR = int(parser.get('currentsem', 'year'))
 CURRENT_COURSE_NO = parser.get('currentsem', 'course_no')
-CURRENT_WEEK = date(parser.get('currentsem', 'first_monday'))
+# CURRENT_WEEK = date(parser.get('currentsem', 'first_monday'))
 LOGGING_LEVEL = parser.get('logs', 'LOGGING_LEVEL')
 
 GOOD_ADJECTIVES = parser.get('adjectives', 'GOOD_ADJECTIVES').replace(' ','').split(",")
@@ -316,12 +316,29 @@ def list_all():
 #             return render_template("error.html")
 #     return render_template('index.html', error=error)
 
+# *********************************************************logout()*****************************************************
+# Description : This method clears the session and returns a json specifying the either the success msg or error msg
+#               with respective status code
+# Input : None
+# Output : 200 code for successful logout, 500 with error msg in json for unsuccessful logout
+# **********************************************************************************************************************
+
+
 @app.route('/logout')
-def logout( ):
-    clear_session( )
-    app.logger.info('User has logged out successfully.')
-    flash('You have been logged out successfully')
-    return redirect(url_for('login'))
+def logout():
+    output = {}
+    try:
+        clear_session()
+        app.logger.info('User has logged out successfully.')
+        output['log'] = 'Successful logging out'
+        output['status_code'] = 500
+        # flash('You have been logged out successfully')
+    except Exception as e:
+        app.logger.error(e)
+        output['log'] = str(e)
+        output['status_code'] = 500
+    return jsonify(output)
+
 
 def clear_session( ):
     app.logger.debug('Clearing User Session... ')
@@ -329,12 +346,14 @@ def clear_session( ):
     clear_DBsession()
     return
 
+
 def clear_DBsession():
     app.logger.debug('Clearing DB Session...')
     if dbSession is not None:
         dbSession.flush()
         dbSession.close()
     return
+
 
 @app.route('/reset-password', methods=('GET', 'POST',))
 def forgot_password():
@@ -415,15 +434,16 @@ def mail_sender():
         app.logger.error(e)
         return render_template("error.html")
 
-@app.route("/notification-success")
-def notification_success():
-    app.logger.info('Email notification successfully sent.')
-    return render_template('notification-success.html')
 
-@app.errorhandler(Exception)
-def unhandled_exception(e):
-    app.logger.error(e)
-    return render_template("error.html")
+# @app.route("/notification-success")
+# def notification_success():
+#     app.logger.info('Email notification successfully sent.')
+#     return render_template('notification-success.html')
+
+# @app.errorhandler(Exception)
+# def unhandled_exception(e):
+#     app.logger.error(e)
+#     return render_template("error.html")
 
 # *********************************************************login()******************************************************
 # Description : This method takes in a json consisting of username and password and returns whether the user login is
@@ -432,57 +452,68 @@ def unhandled_exception(e):
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
 
-@app.route('/', methods=['POST'])
-@app.route('/login', methods=['POST'])
+@app.route('/', methods=['GET'])
+@app.route('/login', methods=['GET'])
 def login():
-    output = jsonify({"error" : None})
+    output = {"log" : None, "status_code" : 0}
     if dbSession is None:
         init_dbSession()
 
     try:
         profile_information = request.get_json()
-
         app.logger.debug('Attempting User login: '+ profile_information['username'])
         app_user = profile_information['username']
         app_user_pwd = profile_information['password']
-        # users = dbSession.query(Student).all()
-        is_authentic = dbSession.query(exists().where(and_(Student.user_name==app_user, Student.login_pwd==app_user_pwd))).scalar()
+        is_authentic = dbSession.query(exists().where(and_(Student.user_name == app_user, Student.login_pwd == app_user_pwd))).scalar()
 
-        if is_authentic != True:
+        if not is_authentic:
             app.logger.error('Invalid Credentials. Please try again.')
-            output['error'] = 'Invalid Credentials. Please try again.'
-            return output, 500
+            output['log'] = 'Invalid Credentials. Please try again.'
+            output['status_code'] = 500
+            return jsonify(output)
         else:
             session['app_user'] = app_user
-            return output, 200
+            student = dbSession.query(Student).filter_by(user_name=app_user).first()
+            output['first_name'] = student.first_name
+            output['last_name'] = student.last_name
+            output['log'] = "Success logging in " + app_user
+            output['status_code'] = 200
+            return jsonify(output)
     except exc.InvalidRequestError as e:
         dbSession.rollback()
         app.logger.error(e)
-        output['error'] = e
+        output['log'] = str(e)
         app.logger.error('Rolling back invalid transaction.')
-        return output, 500
+        output['status_code'] = 500
+        return jsonify(output)
     except Exception as e:
         app.logger.error(e)
-        output['error'] = e
-        return output, 500
+        output['log'] = str(e)
+        output['status_code'] = 500
+        return jsonify(output)
 
 
-#***********************************************************team()******************************************************
+# ***********************************************************team()*****************************************************
 # Description: team() creates a Json of all the students except the logged in student to be used by the web application
-#               to create the list of evalees using the username provided from the student_group table
+#               to create the list of evalees using the username provided from the student_group table;
+#               returns error if the evaluation for the current week has been submitted already
 # Input : None; uses the username from session information to find the team details
 # Output : returns a json which consists of all the team-members and their respective details
-#***********************************************************************************************************************
+# **********************************************************************************************************************
 
 @app.route('/team',  methods=('GET',))
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def team():
-    app_user = session['app_user']
     if dbSession is None:
         init_dbSession()
     try:
+        if 'app_user' in session:
+            app_user = session['app_user']
+        else:
+            raise Exception('User not logged in')
+
         # Check if the evaluation has already been submitted by the student for the current week
-        # get the maxweek from the groups table in database and the current semester
+        # get the max week from the groups table in database and the current semester
         semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
                                                        course_no=CURRENT_COURSE_NO).first()
         max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
@@ -496,61 +527,74 @@ def team():
         if number_of_evaluations_submitted > 0:
             app.logger.debug("number_of_evaluations_submitted > 0")
             clear_session()
-            return jsonify({"error":"Evaluation already submitted for the current week"}), 500
+            return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 500})
 
         student = dbSession.query(Student).filter_by(user_name = app_user).first()
         team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
         group_student = dbSession.query(Group_Student).filter_by(group_id=team_number).all()
         new_group_student = []
 
+        # Removing the logged in user from the list of team members
         for member in group_student:
             if student.user_name != member.student_id:
                 new_group_student.append(member)
 
+        # Extracting the team members details from student table
         student_data = []
         for member in new_group_student:
-            print(member.student_id)
             student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
 
-        json_array = []
+        team_dict = {}
         for i in range(len(student_data)):
-            print(student_data[i])
-            json_str = '\"evalee' + str(i) + '\": ' + '{"username": "' + student_data[i].user_name + '"'
-            json_str += ',"firstName": "' + student_data[i].first_name + '"'
-            json_str += ',"lastName": "' + student_data[i].last_name + '"'
-            json_str += ',"isManager": "' + str(new_group_student[i].is_manager) + '"'
-            json_str += ',"evaluation": { "rank":-1 , "tokens":-1 , "description":-1 , "adjective":-1}'
-            json_str += "}"
-            json_array.append(json_str)
+            member_dict = {'username': student_data[i].user_name,
+                           'first_name': student_data[i].first_name,
+                           'last_name': student_data[i].last_name,
+                           'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
+                           'is_manager': str(new_group_student[i].is_manager),
+                           'evaluation' : {'rank' : -1, 'tokens': -1, 'description': -1, 'adjective': -1}
+                           }
+            if new_group_student[i].is_manager == 1:
+                member_dict['approachable_attitude'] = -1
+                member_dict['team_communication'] = -1
+                member_dict['client_interaction'] = -1
+                member_dict['decision_making'] = -1
+                member_dict['resource_utilization'] = -1
+                member_dict['follow_up_to_completion'] = -1
+                member_dict['task_delegation_and_ownership'] = -1
+                member_dict['encourage_team_development'] = -1
+                member_dict['realistic_expectation'] = -1
+                member_dict['performance_under_stress'] = -1
+                member_dict['mgr_description'] = -1
+            team_dict['evalee'+str(i)] = member_dict
 
-        json_array.append('"goodAjectives": ' + str(GOOD_ADJECTIVES).replace("'", '"'))
-        json_array.append('"BadAjectives": ' + str(BAD_ADJECTIVES).replace("'", '"'))
-        final_json = '{'
-        print("len json array =", str(len(json_array)))
-        for json_object in json_array:
-            final_json += json_object + ","
+        output = jsonify({'team': team_dict,
+                          'good_adjectives': GOOD_ADJECTIVES,
+                          'bad_adjectives': BAD_ADJECTIVES,
+                          'status_code': 200,
+                          'log': "Success in extracting team information",
+                          })
 
-        final_json = final_json[0:len(final_json)-2] + "]}" #removes comma at end and adds close brace
     except Exception as e:
-        return jsonify({ "error": e }), 500
+        return jsonify({"log": str(e), "status_code": 500})
 
-    return final_json, 200
+    return output
 
-#***********************************************************team_evaluations()******************************************
+# ***********************************************************team_evaluations()******************************************
 # Description: team_evaluations()
 # Input : None; uses the username from session information to find the team details
 # Output : returns a json which consists of all the team-members and their respective details
-#***********************************************************************************************************************
+# ***********************************************************************************************************************
+
 
 @app.route('/evaluations',  methods=['POST'])
 def team_evaluations():
     # calculate the current week using the date of first monday of the semester from the config file
-    curr_week =
+    # curr_week =
 
     if not session.get('app_user'):
         clear_DBsession()
         app.logger.debug('clear_DBsession')
-        return jsonify({ "error": "" }), 500
+        return jsonify({ "error": ""}), 500
     app_user = session['app_user']
     app.logger.debug('Currently logged in user : '+ app_user)
 
@@ -570,7 +614,7 @@ def team_evaluations():
         # TODO: Write logic for the week to find max from the evaluation table or initilize t 1 if empty
         evaluation = Evaluation(evaler=evaler,
                                 evalee=evalee,
-                                # week=eval['week'].data,
+                                week=1,
                                 rank=eval['rank'],
                                 token=eval['tokens'],
                                 description=eval['description'],
