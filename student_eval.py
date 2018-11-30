@@ -1,6 +1,6 @@
 import sys
 import os
-lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib\\python2.7\\site-packages'))
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib/python2.7/site-packages'))
 # sys.path.append("./lib/python2.7/site-packages/")
 sys.path.append(lib_path)
 
@@ -466,12 +466,11 @@ def login():
 
     try:
         profile_information = request.get_json()
-        print(profile_information)
+        print("profile information:", profile_information)
         app.logger.debug('Attempting User login: '+ profile_information['username'])
         app_user = profile_information['username']
         app_user_pwd = profile_information['password']
         is_authentic = dbSession.query(exists().where(and_(Student.user_name == app_user, Student.login_pwd == app_user_pwd))).scalar()
-
         if not is_authentic:
             app.logger.error('Invalid Credentials. Please try again.')
             output['log'] = 'Invalid Credentials. Please try again.'
@@ -529,6 +528,12 @@ def team():
                     EncryptedEvaluation.semester == semester) \
             .count()
 
+        weekQuery = dbSession.query(Groups).filter_by().all()
+        weekNumberList = []
+        for item in weekQuery:
+            weekNumberList.append(int(item.week))
+        weekNumber = max(weekNumberList)
+        print("Week Number: ", weekNumber)
         # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
         if number_of_evaluations_submitted > 0:
             app.logger.debug("number_of_evaluations_submitted > 0")
@@ -578,6 +583,7 @@ def team():
                           'bad_adjectives': BAD_ADJECTIVES,
                           'status_code': 200,
                           'log': "Success in extracting team information",
+                          'week':weekNumber
                           })
 
     except Exception as e:
@@ -643,6 +649,8 @@ def team_evaluations():
     app.logger.debug('dbsession commit')
     clear_session()
     return jsonify({"success" : "evaluation updated in db successfully"}), 200
+
+
 
 
 # ***********************************************************************************************************************************************
