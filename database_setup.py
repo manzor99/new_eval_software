@@ -22,6 +22,20 @@ codecs.register(lambda name: codecs.lookup('utf8' if name == 'utf8mb4' else None
 
 Base = declarative_base()
 
+class User():
+    def __init__(self, username=None, password=None, first_name = None, last_name = None):
+        self.username = username
+        self.password = password
+        self.first_name = first_name
+        self.last_name = last_name
+
+    def is_authenticated(self):
+        return True
+
+    def get_id(self):
+        return unicode(self.username)
+
+
 class Student(Base):
     __tablename__ = 'student'
     user_name = Column(VARCHAR(15), primary_key=True)
@@ -56,26 +70,6 @@ class Student(Base):
         except:
             return None
         return data
-#
-# class AuthenticationTokens(Base):
-#     __tablename__ = 'authentication_tokens'
-#
-#     token = Column(Integer, nullable=False)
-#     season = Column(VARCHAR(11), nullable=False)
-#     create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     course_no = Column(VARCHAR(11), nullable=False)
-#
-#     @property
-#     def serialize(self):
-#         """Return object data in easily serializeable format"""
-#         return {
-#             'year': self.year,
-#             'season': self.season,
-#             'id': self.id,
-#             'course_no': self.course_no,
-#         }
-
 
 class Semester(Base):
     __tablename__ = 'semester'
@@ -204,8 +198,10 @@ class Evaluation(Base):
 class EncryptedEvaluation(Base):
     __tablename__ = 'encrypted_evaluation'
 
-    evaler_id = Column(VARCHAR(10), ForeignKey(Student.user_name, onupdate="CASCADE", ondelete="CASCADE"), primary_key=True, autoincrement=False)
-    evalee_id = Column(VARCHAR(10), ForeignKey(Student.user_name, onupdate="CASCADE", ondelete="CASCADE"), primary_key=True, autoincrement=False)
+    evaler_id = Column(VARCHAR(10), ForeignKey(Student.user_name, onupdate="CASCADE", ondelete="CASCADE"),
+                       primary_key=True, autoincrement=False)
+    evalee_id = Column(VARCHAR(10), ForeignKey(Student.user_name, onupdate="CASCADE", ondelete="CASCADE"),
+                       primary_key=True, autoincrement=False)
     week = Column(Integer, primary_key=True, autoincrement=False)
     rank = Column(String(128), nullable=False)
     token = Column(String(128), nullable=False)
@@ -385,7 +381,7 @@ if __name__ == '__main__':
     host = parser.get('login', 'host')
     port = parser.get('login', 'port')
 
-    engine = create_engine('mysql://' + "root" + ':' + "password" + '@' + host +':' + port + '/' + schema)
+    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Base.metadata.tables["evaluation"].drop(bind = engine)

@@ -16,7 +16,8 @@ from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import exc
-from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation, EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit
+from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, \
+    EncryptedEvaluation, EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit, User
 from ConfigParser import SafeConfigParser
 from encrypt import EvalCipher
 from highcharts import Highchart
@@ -287,41 +288,6 @@ def list_all():
     return render_template('eval.html',form = form,ga=GOOD_ADJECTIVES,ba=BAD_ADJECTIVES)
 
 
-# *********************************************************logout()*****************************************************
-# Description : This method clears the session and returns a json specifying the either the success msg or error msg
-#               with respective status code
-# Input : None
-# Output : 200 code for successful logout, 500 with error msg in json for unsuccessful logout
-# **********************************************************************************************************************
-
-
-# @app.route('/logout', methods = ['GET', 'POST'])
-# def logout():
-#     flask_login.logout_user()
-#     return 'Logged out'
-
-@app.route('/logout')
-def logout():
-    output = {}
-    try:
-        clear_session()
-        app.logger.info('User has logged out successfully.')
-        output['log'] = 'Successful logging out'
-        output['status_code'] = 500
-        # flash('You have been logged out successfully')
-    except Exception as e:
-        app.logger.error(e)
-        output['log'] = str(e)
-        output['status_code'] = 500
-    return jsonify(output)
-
-
-def clear_session( ):
-    app.logger.debug('Clearing User Session... ')
-    session.pop('app_user')
-    clear_DBsession()
-    return
-
 
 def clear_DBsession():
     app.logger.debug('Clearing DB Session...')
@@ -411,60 +377,36 @@ def mail_sender():
         return render_template("error.html")
 
 
-# @app.route("/notification-success")
-# def notification_success():
-#     app.logger.info('Email notification successfully sent.')
-#     return render_template('notification-success.html')
-
-# @app.errorhandler(Exception)
-# def unhandled_exception(e):
-#     app.logger.error(e)
-#     return render_template("error.html")
-
 # *********************************************************login()******************************************************
 # Description : This method takes in a json consisting of username and password and returns whether the user login is
 #               valid or not.
 # Input : a json consisting of username and password
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
+def encode_auth_token(user_name):
+    try:
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
+            'iat': datetime.datetime.utcnow(),
+            'sub': user_name
+        }
+        return jwt.encode(
+            payload,
+            app.config.get('SECRET_KEY'),
+            algorithm='HS256'
+        )
+    except Exception as e:
+        return e
 
-class User():
-    def __init__(self, username=None, password=None, first_name = None, last_name = None):
-        self.username = username
-        self.password = password
-        self.first_name = first_name
-        self.last_name = last_name
-
-    def is_authenticated(self):
-        return True
-
-    def get_id(self):
-        return unicode(self.username)
-
-    def encode_auth_token(self, user_name):
-        try:
-            payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
-                'iat': datetime.datetime.utcnow(),
-                'sub': user_name
-            }
-            return jwt.encode(
-                payload,
-                app.config.get('SECRET_KEY'),
-                algorithm='HS256'
-            )
-        except Exception as e:
-            return e
-
-    @staticmethod
-    def decode_auth_token(auth_token):
-        try:
-            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
-            return payload['sub']
-        except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again.'
-        except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
+    # @staticmethod
+def decode_auth_token(auth_token):
+    try:
+        payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
+        return payload['sub']
+    except jwt.ExpiredSignatureError:
+        return 'Signature expired. Please log in again.'
+    except jwt.InvalidTokenError:
+        return 'Invalid token. Please log in again.'
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -484,7 +426,7 @@ def login():
         if db_data and (db_data.login_pwd == post_data.get('password')):
             # create the user object
             user = User(db_data.user_name, db_data.login_pwd, db_data.first_name, db_data.last_name)
-            auth_token = user.encode_auth_token(user.username)
+            auth_token = encode_auth_token(user.username)
             print("Auth token created")
             if auth_token:
                 response_object = {
@@ -499,7 +441,7 @@ def login():
         else:
             response_object = {
                 'status_code': 501,
-                'log': 'User does not exist.'
+                'log': 'Username/password is incorrect'
             }
             return jsonify(response_object)
     except Exception as e:
@@ -529,12 +471,8 @@ def team():
         auth_token = post_data.get('auth_token')
 
         if auth_token:
-            resp = User.decode_auth_token(auth_token)
-            print(resp)
-            if not isinstance(resp, str):
-                app_user = dbSession.query(Student).filter_by(
-                    user_name=resp
-                ).first().user_name
+            app_user = decode_auth_token(auth_token)
+            if not isinstance(app_user, str):
                 # Check if the evaluation has already been submitted by the student for the current week
                 # get the max week from the groups table in database and the current semester
                 semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
@@ -552,7 +490,7 @@ def team():
                     weekNumberList.append(int(item.week))
                 weekNumber = max(weekNumberList)
                 print("Week Number: ", weekNumber)
-                # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
+                # error if the number of submissions is greater than 0 for the student, for the current semester
                 if number_of_evaluations_submitted > 0:
                     app.logger.debug("number_of_evaluations_submitted > 0")
                     clear_session()
@@ -575,26 +513,28 @@ def team():
 
                 team_list = []
                 for i in range(len(student_data)):
+
                     member_dict = {'username': student_data[i].user_name,
                                    'first_name': student_data[i].first_name,
                                    'last_name': student_data[i].last_name,
                                    'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
                                    'is_manager': str(new_group_student[i].is_manager),
-                                   'evaluation' : {'rank': i, 'tokens': 0, 'description': "", 'adjective': ""}
+                                   'is_complete' : False,
+                                   'evaluation' : {'rank': i+1, 'tokens': 0, 'description': "", 'adjective': ""}
                                    }
                     manager_dict = {}
                     if new_group_student[i].is_manager == 1:
-                        manager_dict['approachable_attitude'] = 1
-                        manager_dict['team_communication'] = 1
-                        manager_dict['client_interaction'] = 1
-                        manager_dict['decision_making'] = 1
-                        manager_dict['resource_utilization'] = 1
-                        manager_dict['follow_up_to_completion'] = 1
-                        manager_dict['task_delegation_and_ownership'] = 1
-                        manager_dict['encourage_team_development'] = 1
-                        manager_dict['realistic_expectation'] = 1
-                        manager_dict['performance_under_stress'] = 1
-                        manager_dict['mgr_description'] = 1
+                        manager_dict['approachable_attitude'] = -1
+                        manager_dict['team_communication'] = -1
+                        manager_dict['client_interaction'] = -1
+                        manager_dict['decision_making'] = -1
+                        manager_dict['resource_utilization'] = -1
+                        manager_dict['follow_up_to_completion'] = -1
+                        manager_dict['task_delegation_and_ownership'] = -1
+                        manager_dict['encourage_team_development'] = -1
+                        manager_dict['realistic_expectation'] = -1
+                        manager_dict['performance_under_stress'] = -1
+                        manager_dict['mgr_description'] = -1
                     member_dict['manager'] = manager_dict
                     team_list.append(member_dict)
 
