@@ -481,10 +481,10 @@ def login():
             else:
                 return jsonify({"log": "Password incorrect", "status_code": 501})
         else:
-            return jsonify({"error": "Username incorrect", "status_code": 502})
+            return jsonify({"log": "Username incorrect", "status_code": 502})
 
     except Exception as e:
-        return jsonify({"error": "Error", "status_code": 500})
+        return jsonify({"log": "Error", "status_code": 500})
 
 # @app.route('/protected',methods = ['GET', 'POST'])
 # @flask_login.login_required
@@ -511,6 +511,7 @@ def team():
     if dbSession is None:
         init_dbSession()
     try:
+        app_user = flask_login.current_user.username
         # Check if the evaluation has already been submitted by the student for the current week
         # get the max week from the groups table in database and the current semester
         semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
@@ -556,7 +557,7 @@ def team():
                            'last_name': student_data[i].last_name,
                            'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
                            'is_manager': str(new_group_student[i].is_manager),
-                           'evaluation' : {'rank' : -1, 'tokens': -1, 'description': -1, 'adjective': -1}
+                           'evaluation' : {'rank': -1, 'tokens': -1, 'description': -1, 'adjective': -1}
                            }
             if new_group_student[i].is_manager == 1:
                 member_dict['approachable_attitude'] = -1
@@ -663,10 +664,10 @@ if __name__ == '__main__':
     #app.run(host=APP_HOST, port=int(APP_PORT), ssl_context=context) #https
 
     #trying to use tornado
-    ssl_context = { "certfile": cer, "keyfile": ssl_key  }
+    ssl_context = { "certfile": cer, "keyfile": ssl_key}
 
-    http_server = HTTPServer( WSGIContainer(app), ssl_options=ssl_context )
+    http_server = HTTPServer( WSGIContainer(app), ssl_options=ssl_context)
 
-    http_server.listen( 55555 )
+    http_server.listen(55555)
 
     IOLoop.instance().start()
