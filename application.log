@@ -1,85 +1,29 @@
-[2018-11-20 16:04:56,791] {student_eval.py:122} DEBUG - global name 'DBSession' is not defined
-[2018-11-20 16:04:56,792] {student_eval.py:123} ERROR - global name 'DBSession' is not defined
-[2018-11-20 16:04:56,801] {student_eval.py:460} ERROR - 'NoneType' object has no attribute '__getitem__'
-[2018-11-20 16:04:56,801] {student_eval.py:425} ERROR - 'Response' object does not support item assignment
-[2018-11-20 16:05:42,041] {student_eval.py:128} DEBUG - inside list_all
-[2018-11-20 16:05:42,041] {student_eval.py:135} DEBUG - Currently logged in user : adam
-[2018-11-20 16:05:42,043] {student_eval.py:425} ERROR - 'NoneType' object has no attribute 'query'
-[2018-11-20 16:05:44,379] {student_eval.py:128} DEBUG - inside list_all
-[2018-11-20 16:05:44,379] {student_eval.py:135} DEBUG - Currently logged in user : adam
-[2018-11-20 16:05:44,380] {student_eval.py:425} ERROR - 'NoneType' object has no attribute 'query'
-[2018-11-20 16:05:47,330] {student_eval.py:128} DEBUG - inside list_all
-[2018-11-20 16:05:47,330] {student_eval.py:135} DEBUG - Currently logged in user : adam
-[2018-11-20 16:05:47,331] {student_eval.py:425} ERROR - 'NoneType' object has no attribute 'query'
-[2018-11-25 21:34:49,351] {student_eval.py:425} ERROR - 'app_user'
-[2018-11-25 21:37:55,598] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 21:37:55,607] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 21:39:29,878] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 21:39:29,888] {student_eval.py:453} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 21:39:29,888] {student_eval.py:466} ERROR - 'Response' object does not support item assignment
-[2018-11-25 21:39:29,894] {student_eval.py:425} ERROR - 'Response' object does not support item assignment
-[2018-11-25 21:39:46,069] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:27:05,934] {student_eval.py:425} ERROR - global name 'status_code' is not defined
-[2018-11-25 22:27:14,328] {student_eval.py:425} ERROR - global name 'status_code' is not defined
-[2018-11-25 22:27:18,655] {student_eval.py:425} ERROR - global name 'status_code' is not defined
-[2018-11-25 22:29:18,319] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:29:18,322] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:29:18,338] {student_eval.py:453} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:29:18,342] {student_eval.py:471} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:29:18,342] {student_eval.py:425} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:30:01,006] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:30:01,009] {student_eval.py:453} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:30:01,009] {student_eval.py:471} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:30:01,009] {student_eval.py:425} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:31:45,887] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:31:45,887] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:31:45,894] {student_eval.py:453} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:31:45,894] {student_eval.py:471} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:31:55,125] {student_eval.py:446} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:31:55,125] {student_eval.py:453} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:31:55,125] {student_eval.py:471} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:36:59,855] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:36:59,859] {student_eval.py:336} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:36:59,875] {student_eval.py:361} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:36:59,875] {student_eval.py:473} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:43:25,068] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:43:25,068] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:43:37,017] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:43:37,017] {student_eval.py:452} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:43:37,022] {student_eval.py:465} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:43:37,022] {student_eval.py:425} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:43:50,298] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:44:32,838] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:44:32,838] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:44:43,038] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:44:43,038] {student_eval.py:452} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:44:43,038] {student_eval.py:465} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:46:46,148] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:46:46,148] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:46:50,711] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:46:50,736] {student_eval.py:452} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:46:50,736] {student_eval.py:465} ERROR - 'Response' object does not support item assignment
-[2018-11-25 22:47:04,927] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:52:15,000] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:52:15,000] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:52:26,348] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:52:26,351] {student_eval.py:452} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 22:56:58,174] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-25 22:56:58,174] {student_eval.py:445} DEBUG - Attempting User login: sbaranwa
-[2018-11-25 22:56:58,190] {student_eval.py:452} ERROR - Invalid Credentials. Please try again.
-[2018-11-25 23:45:49,803] {student_eval.py:327} DEBUG - Clearing User Session... 
-[2018-11-25 23:45:49,803] {student_eval.py:333} DEBUG - Clearing DB Session...
-[2018-11-25 23:45:49,808] {student_eval.py:322} INFO - User has logged out successfully.
-[2018-11-25 23:45:49,816] {student_eval.py:469} ERROR - 'NoneType' object has no attribute '__getitem__'
-[2018-11-26 00:06:46,023] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 00:06:59,448] {student_eval.py:487} ERROR - 400: Bad Request
-[2018-11-26 00:07:55,703] {student_eval.py:464} DEBUG - Attempting User login: sbaranwa
-[2018-11-26 00:10:45,765] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 00:20:59,681] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 00:21:42,233] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 00:41:51,953] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 01:01:29,085] {student_eval.py:344} DEBUG - Clearing User Session... 
-[2018-11-26 01:01:29,085] {student_eval.py:351} DEBUG - Clearing DB Session...
-[2018-11-26 01:01:29,085] {student_eval.py:332} INFO - User has logged out successfully.
-[2018-11-26 01:01:48,930] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
-[2018-11-26 01:01:48,930] {student_eval.py:464} DEBUG - Attempting User login: sbaranwa
+[2018-12-01 16:47:41,424] {student_eval.py:530} DEBUG - Attempting User login: rmanzo
+[2018-12-01 16:48:08,388] {student_eval.py:530} DEBUG - Attempting User login: rmanzo
+[2018-12-01 16:50:14,469] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 16:50:14,473] {student_eval.py:534} DEBUG - Attempting User login: rmanzo
+[2018-12-01 16:50:57,207] {student_eval.py:534} DEBUG - Attempting User login: rmanzo
+[2018-12-01 16:53:30,842] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 16:53:30,846] {student_eval.py:535} DEBUG - Attempting User login: rmanzo
+[2018-12-01 22:43:58,792] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 22:43:58,799] {student_eval.py:526} DEBUG - Attempting User login: rmanzo
+[2018-12-01 23:36:23,690] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 23:36:23,690] {student_eval.py:526} DEBUG - Attempting User login: rmanzo
+[2018-12-01 23:36:50,348] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 23:36:50,351] {student_eval.py:526} DEBUG - Attempting User login: rmanzo
+[2018-12-01 23:40:20,270] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 23:41:07,173] {student_eval.py:526} DEBUG - Attempting User login: rmanzo
+[2018-12-01 23:44:09,358] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 23:44:09,362] {student_eval.py:512} DEBUG - Attempting User login: rmanzo
+[2018-12-01 23:46:27,953] {student_eval.py:119} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-01 23:46:27,957] {student_eval.py:512} DEBUG - Attempting User login: rmanzo
+[2018-12-02 00:12:52,298] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 00:12:52,302] {student_eval.py:478} DEBUG - Attempting User login: rmanzo
+[2018-12-02 00:13:02,233] {student_eval.py:478} DEBUG - Attempting User login: rmanzo
+[2018-12-02 00:13:08,443] {student_eval.py:478} DEBUG - Attempting User login: rmyanzo
+[2018-12-02 00:14:07,535] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 00:16:47,803] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 00:17:21,341] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 00:20:10,599] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 00:20:10,604] {student_eval.py:472} DEBUG - Attempting User login: rmyanzo
+[2018-12-02 00:20:19,934] {student_eval.py:472} DEBUG - Attempting User login: rmanzo

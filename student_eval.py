@@ -10,6 +10,7 @@ from tornado.ioloop import IOLoop
 
 import os
 from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify
+import flask_login
 from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
@@ -44,9 +45,9 @@ cer = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.ed
 ssl_key = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.edu.key')
 
 
-
 parser = SafeConfigParser()
 parser.read('config.ini')
+
 
 username = parser.get('login', 'username')
 password = parser.get('login', 'password')
@@ -93,7 +94,10 @@ app.permanent_session_lifetime = timedelta(seconds=10800)
 mail = Mail(app)
 dbSession = None
 
-#print 'key:', key
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
 evalCipher = EvalCipher(key)
 urlSerializer = URLSafeSerializer(key)
 
@@ -288,37 +292,6 @@ def list_all():
 
     return render_template('eval.html',form = form,ga=GOOD_ADJECTIVES,ba=BAD_ADJECTIVES)
 
-# @app.route('/', methods=['GET', 'POST'])
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     error = None
-#     if request.method == 'POST':
-#         if dbSession is None:
-#             init_dbSession()
-#
-#         try:
-#             app.logger.debug('Attempting User login: '+ request.form['username'])
-#             app_user = request.form['username']
-#             app_user_pwd = request.form['password']
-#             users = dbSession.query(Student).all()
-#             isAuthentic = dbSession.query(exists().where(and_(Student.user_name==app_user, Student.login_pwd==app_user_pwd))).scalar()
-#
-#             if isAuthentic != True:
-# 		        app.logger.error('Invalid Credentials. Please try again.')
-#                 error = 'Invalid Credentials. Please try again.'
-#             else:
-# 		        app.logger.debug('redirect to list_all')
-#                 session['app_user'] = app_user
-#                 return redirect(url_for('list_all'))
-#         except exc.InvalidRequestError as e:
-#             dbSession.rollback()
-#             app.logger.error(e)
-#             app.logger.error('Rolling back invalid transaction.')
-#             return render_template("error.html")
-# 	except Exception as e:
-#             app.logger.error(e)
-#             return render_template("error.html")
-#     return render_template('index.html', error=error)
 
 # *********************************************************logout()*****************************************************
 # Description : This method clears the session and returns a json specifying the either the success msg or error msg
@@ -328,20 +301,25 @@ def list_all():
 # **********************************************************************************************************************
 
 
-@app.route('/logout')
+@app.route('/logout', methods = ['GET', 'POST'])
 def logout():
-    output = {}
-    try:
-        clear_session()
-        app.logger.info('User has logged out successfully.')
-        output['log'] = 'Successful logging out'
-        output['status_code'] = 500
-        # flash('You have been logged out successfully')
-    except Exception as e:
-        app.logger.error(e)
-        output['log'] = str(e)
-        output['status_code'] = 500
-    return jsonify(output)
+    flask_login.logout_user()
+    return 'Logged out'
+
+# @app.route('/logout')
+# def logout():
+#     output = {}
+#     try:
+#         clear_session()
+#         app.logger.info('User has logged out successfully.')
+#         output['log'] = 'Successful logging out'
+#         output['status_code'] = 500
+#         # flash('You have been logged out successfully')
+#     except Exception as e:
+#         app.logger.error(e)
+#         output['log'] = str(e)
+#         output['status_code'] = 500
+#     return jsonify(output)
 
 
 def clear_session( ):
@@ -456,11 +434,35 @@ def mail_sender():
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
 
+class User(flask_login.UserMixin):
+    def __init__(self, username=None, password=None, first_name = None, last_name = None):
+        self.username = username
+        self.password = password
+        self.first_name = first_name
+        self.last_name = last_name
+
+    def is_authenticated(self):
+        return True
+
+    def get_id(self):
+        return unicode(self.username)
+
+
+@login_manager.user_loader
+def find_by_username(username):
+    try:
+        data = dbSession.query(Student).filter_by(user_name=username).first()
+        user = User(data.user_name, data.login_pwd, data.first_name, data.last_name)
+        return user
+
+    except Exception:
+        return None
+
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def login():
-    output = {"log" : None, "status_code" : 0}
     if dbSession is None:
         init_dbSession()
 
@@ -468,34 +470,30 @@ def login():
         profile_information = request.get_json()
         print("profile information:", profile_information)
         app.logger.debug('Attempting User login: '+ profile_information['username'])
-        app_user = profile_information['username']
-        app_user_pwd = profile_information['password']
-        is_authentic = dbSession.query(exists().where(and_(Student.user_name == app_user, Student.login_pwd == app_user_pwd))).scalar()
-        if not is_authentic:
-            app.logger.error('Invalid Credentials. Please try again.')
-            output['log'] = 'Invalid Credentials. Please try again.'
-            output['status_code'] = 500
-            return jsonify(output)
+        user = find_by_username(profile_information['username'])
+        user_pwd = profile_information['password']
+        if user is not None:
+            if user.password == user_pwd:
+                flask_login.login_user(user, remember = True)
+                return jsonify({"log": "Success loggin in", "app_user": user.username,
+                                "first_name": user.first_name, "last_name": user.last_name, "status_code": 200})
+
+            else:
+                return jsonify({"log": "Password incorrect", "status_code": 501})
         else:
-            session['app_user'] = app_user
-            student = dbSession.query(Student).filter_by(user_name=app_user).first()
-            output['first_name'] = student.first_name
-            output['last_name'] = student.last_name
-            output['log'] = "Success logging in " + app_user
-            output['status_code'] = 200
-            return jsonify(output)
-    except exc.InvalidRequestError as e:
-        dbSession.rollback()
-        app.logger.error(e)
-        output['log'] = str(e)
-        app.logger.error('Rolling back invalid transaction.')
-        output['status_code'] = 500
-        return jsonify(output)
+            return jsonify({"error": "Username incorrect", "status_code": 502})
+
     except Exception as e:
-        app.logger.error(e)
-        output['log'] = str(e)
-        output['status_code'] = 500
-        return jsonify(output)
+        return jsonify({"error": "Error", "status_code": 500})
+
+# @app.route('/protected',methods = ['GET', 'POST'])
+# @flask_login.login_required
+# def protected():
+#     if flask_login.current_user:
+#         return jsonify({'Logged in as' : flask_login.current_user.username})
+#     else:
+#         return "User not logged in"
+
 
 
 # ***********************************************************team()*****************************************************
@@ -506,17 +504,13 @@ def login():
 # Output : returns a json which consists of all the team-members and their respective details
 # **********************************************************************************************************************
 
-@app.route('/team',  methods=('GET',))
+@app.route('/team',  methods=['GET', 'POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
+@flask_login.login_required
 def team():
     if dbSession is None:
         init_dbSession()
     try:
-        if 'app_user' in session:
-            app_user = session['app_user']
-        else:
-            raise Exception('User not logged in')
-
         # Check if the evaluation has already been submitted by the student for the current week
         # get the max week from the groups table in database and the current semester
         semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
