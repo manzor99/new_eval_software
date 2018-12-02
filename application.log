@@ -56,3 +56,7 @@
 [2018-12-02 15:47:54,144] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
 [2018-12-02 15:49:29,650] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
 [2018-12-02 16:11:12,312] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 16:17:46,894] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 16:18:27,239] {student_eval.py:117} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 16:20:27,400] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 16:21:14,552] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
