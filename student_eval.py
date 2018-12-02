@@ -444,7 +444,7 @@ class User():
     def encode_auth_token(self, user_name):
         try:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=600),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_name
             }
@@ -498,15 +498,15 @@ def login():
                 return jsonify(response_object)
         else:
             response_object = {
-                'status_code': '501',
-                'message': 'User does not exist.'
+                'status_code': 501,
+                'log': 'User does not exist.'
             }
             return jsonify(response_object)
     except Exception as e:
         print(e)
         response_object = {
             'status_code': 500,
-            'message': 'Try again'
+            'log': 'Try again'
         }
         return jsonify(response_object)
 
@@ -530,9 +530,10 @@ def team():
 
         if auth_token:
             resp = User.decode_auth_token(auth_token)
+            print(resp)
             if not isinstance(resp, str):
                 app_user = dbSession.query(Student).filter_by(
-                    user_name=post_data.get('username')
+                    user_name=resp
                 ).first().user_name
                 # Check if the evaluation has already been submitted by the student for the current week
                 # get the max week from the groups table in database and the current semester
@@ -600,9 +601,11 @@ def team():
                                   'bad_adjectives': BAD_ADJECTIVES,
                                   'status_code': 200,
                                   'log': "Success in extracting team information",
-                                  'week':weekNumber
+                                  'week': weekNumber
                                   })
                 return output
+            else:
+                return jsonify({"status_code": 500, "log": "invalid token"})
 
     except Exception as e:
         return jsonify({"log": str(e), "status_code": 500})
