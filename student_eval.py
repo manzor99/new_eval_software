@@ -573,7 +573,7 @@ def team():
                 for member in new_group_student:
                     student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
 
-                team_dict = {}
+                team_list = []
                 for i in range(len(student_data)):
                     member_dict = {'username': student_data[i].user_name,
                                    'first_name': student_data[i].first_name,
@@ -594,9 +594,9 @@ def team():
                         member_dict['realistic_expectation'] = -1
                         member_dict['performance_under_stress'] = -1
                         member_dict['mgr_description'] = -1
-                    team_dict['evalee'+str(i)] = member_dict
+                    team_list.append(member_dict)
 
-                output = jsonify({'team': team_dict,
+                output = jsonify({'team': team_list,
                                   'good_adjectives': GOOD_ADJECTIVES,
                                   'bad_adjectives': BAD_ADJECTIVES,
                                   'status_code': 200,
@@ -643,7 +643,7 @@ def team_evaluations():
         evalee = dbSession.query(Student).filter_by(user_name=eval.get('username')).first()
         eval['description'] = eval['description'].encode('utf8')
 
-        # TODO: Write logic for the week to find max from the evaluation table or initilize t 1 if empty
+        # TODO: Write logic for the week to find max from the evaluation table or initilize t1 if empty
         evaluation = Evaluation(evaler=evaler,
                                 evalee=evalee,
                                 week=1,

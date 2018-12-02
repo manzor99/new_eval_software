@@ -57,6 +57,26 @@ class Student(Base):
             return None
         return data
 
+# class AuthenticationTokens(Base):
+#     __tablename__ = 'authentication_tokens'
+#
+#     token = Column(Integer, nullable=False)
+#     season = Column(VARCHAR(11), nullable=False)
+#     create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     course_no = Column(VARCHAR(11), nullable=False)
+#
+#     @property
+#     def serialize(self):
+#         """Return object data in easily serializeable format"""
+#         return {
+#             'year': self.year,
+#             'season': self.season,
+#             'id': self.id,
+#             'course_no': self.course_no,
+#         }
+
+
 class Semester(Base):
     __tablename__ = 'semester'
     __table_args__ = (
