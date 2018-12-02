@@ -16,7 +16,8 @@ from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import exc
-from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation, EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit
+from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation,\
+    EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit, User, AuthenticationTokens
 from ConfigParser import SafeConfigParser
 from encrypt import EvalCipher
 from highcharts import Highchart
@@ -427,46 +428,6 @@ def mail_sender():
 # Input : a json consisting of username and password
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
-
-class User():
-    def __init__(self, username=None, password=None, first_name = None, last_name = None):
-        self.username = username
-        self.password = password
-        self.first_name = first_name
-        self.last_name = last_name
-
-    def is_authenticated(self):
-        return True
-
-    def get_id(self):
-        return unicode(self.username)
-
-    def encode_auth_token(self, user_name):
-        try:
-            payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
-                'iat': datetime.datetime.utcnow(),
-                'sub': user_name
-            }
-            return jwt.encode(
-                payload,
-                app.config.get('SECRET_KEY'),
-                algorithm='HS256'
-            )
-        except Exception as e:
-            return e
-
-    @staticmethod
-    def decode_auth_token(auth_token):
-        try:
-            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
-            return payload['sub']
-        except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again.'
-        except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
-
-
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
@@ -580,20 +541,22 @@ def team():
                                    'last_name': student_data[i].last_name,
                                    'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
                                    'is_manager': str(new_group_student[i].is_manager),
-                                   'evaluation' : {'rank': -1, 'tokens': -1, 'description': -1, 'adjective': -1}
+                                   'evaluation' : {'rank': i, 'tokens': 0, 'description': "", 'adjective': ""}
                                    }
+                    manager_dict = {}
                     if new_group_student[i].is_manager == 1:
-                        member_dict['approachable_attitude'] = -1
-                        member_dict['team_communication'] = -1
-                        member_dict['client_interaction'] = -1
-                        member_dict['decision_making'] = -1
-                        member_dict['resource_utilization'] = -1
-                        member_dict['follow_up_to_completion'] = -1
-                        member_dict['task_delegation_and_ownership'] = -1
-                        member_dict['encourage_team_development'] = -1
-                        member_dict['realistic_expectation'] = -1
-                        member_dict['performance_under_stress'] = -1
-                        member_dict['mgr_description'] = -1
+                        manager_dict['approachable_attitude'] = 1
+                        manager_dict['team_communication'] = 1
+                        manager_dict['client_interaction'] = 1
+                        manager_dict['decision_making'] = 1
+                        manager_dict['resource_utilization'] = 1
+                        manager_dict['follow_up_to_completion'] = 1
+                        manager_dict['task_delegation_and_ownership'] = 1
+                        manager_dict['encourage_team_development'] = 1
+                        manager_dict['realistic_expectation'] = 1
+                        manager_dict['performance_under_stress'] = 1
+                        manager_dict['mgr_description'] = 1
+                    member_dict['manager'] = manager_dict
                     team_list.append(member_dict)
 
                 output = jsonify({'team': team_list,

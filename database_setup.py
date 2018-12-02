@@ -4,7 +4,7 @@ import sys
 #sys.path.append("/u/kspace/new_eval_soft_github/eval_project/lib/python2.7/site-packages/")
 sys.path.append("/usr/local/lib/python2.7/dist-packages")
 
-
+import datetime
 from flask import flash
 from sqlalchemy import Column, ForeignKey, Integer, String, VARCHAR, TIMESTAMP, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
@@ -57,24 +57,26 @@ class Student(Base):
             return None
         return data
 
-# class AuthenticationTokens(Base):
-#     __tablename__ = 'authentication_tokens'
-#
-#     token = Column(Integer, nullable=False)
-#     season = Column(VARCHAR(11), nullable=False)
-#     create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     course_no = Column(VARCHAR(11), nullable=False)
-#
-#     @property
-#     def serialize(self):
-#         """Return object data in easily serializeable format"""
-#         return {
-#             'year': self.year,
-#             'season': self.season,
-#             'id': self.id,
-#             'course_no': self.course_no,
-#         }
+
+class AuthenticationTokens(Base):
+    __tablename__ = 'authentication_tokens'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String(500), unique=True, nullable=False)
+    blacklisted_on = Column(Integer, nullable=False)
+
+    def __init__(self, token, is_blacklisted):
+        self.token = token
+        self.is_blacklisted = is_blacklisted
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'token': self.token,
+            'is_blacklisted': self.is_blacklisted
+        }
 
 
 class Semester(Base):
@@ -297,6 +299,45 @@ class Group_Student(Base):
             'student_id': self.student_id,
             'group_id': self.group_id,
         }
+
+
+class User():
+    def __init__(self, username=None, password=None, first_name = None, last_name = None):
+        self.username = username
+        self.password = password
+        self.first_name = first_name
+        self.last_name = last_name
+
+    def is_authenticated(self):
+        return True
+
+    def get_id(self):
+        return unicode(self.username)
+
+    def encode_auth_token(self, user_name):
+        try:
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
+                'iat': datetime.datetime.utcnow(),
+                'sub': user_name
+            }
+            return jwt.encode(
+                payload,
+                app.config.get('SECRET_KEY'),
+                algorithm='HS256'
+            )
+        except Exception as e:
+            return e
+
+    @staticmethod
+    def decode_auth_token(auth_token):
+        try:
+            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
+            return payload['sub']
+        except jwt.ExpiredSignatureError:
+            return 'Signature expired. Please log in again.'
+        except jwt.InvalidTokenError:
+            return 'Invalid token. Please log in again.'
 
 class ManagerEvalForm(WTForm):
     choices = [('5','5'), ('4','4'), ('3','3'), ('2','2'), ('1','1')]
