@@ -131,6 +131,7 @@ def init_dbSession():
 def saveEval():
     app.logger.debug('inside list_all')
     semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
+    finalEvals = []
     try:
         if not session.get('app_user'):
             clear_DBsession()
@@ -148,41 +149,40 @@ def saveEval():
         for item in weekQuery:
             weekNumberList.append(int(item.week))
         weekNumber = max(weekNumberList)
-
         #evaluation = Evaluation(evaler=evaler, evalee=evalee, week=eval['week'].data, rank=eval['rank'].data, token=eval['tokens'].data, description=eval['description'].data, adjective=eval['adjective'].data, encryptedManagerEval=encryptedManagerEval, semester=semester)
-        for eval in evals:
+        print("evals =", evals)
+        for eval in evals['team']:
+            print("eval =", eval)
             evalee = eval['username']
             encryptedManagerEval = None
             if eval['is_manager'] == 1:
                 print "inside is_manager"
-                managerEval = Manager_Eval(approachable_attitude = eval['approachable'].data,
-                            team_communication = eval['communication'].data,
-                            client_interaction = eval['client_interaction'].data,
-                            decision_making = eval['decision_making'].data,
-                            resource_utilization = eval['resource_utilization'].data,
-                            follow_up_to_completion = eval['follow_up_to_completion'].data,
-                            task_delegation_and_ownership = eval['task_delegation_and_ownership'].data,
-                            encourage_team_development = eval['encourage_team_development'].data,
-                            realistic_expectation = eval['realistic_expectation'].data,
-                            performance_under_stress = eval['performance_under_stress'].data,
+                managerEval = Manager_Eval(approachable_attitude = eval['approachable'],
+                            team_communication = eval['communication'],
+                            client_interaction = eval['client_interaction'],
+                            decision_making = eval['decision_making'],
+                            resource_utilization = eval['resource_utilization'],
+                            follow_up_to_completion = eval['follow_up_to_completion'],
+                            task_delegation_and_ownership = eval['task_delegation_and_ownership'],
+                            encourage_team_development = eval['encourage_team_development'],
+                            realistic_expectation = eval['realistic_expectation'],
+                            performance_under_stress = eval['performance_under_stress'],
                             mgr_description = 'None')
                 encryptedManagerEval = evalCipher.encryptManagerEval(managerEval)
                 dbSession.add(encryptedManagerEval)
-            eval['description'] = eval['description'].encode('utf8')
             evaluation = Evaluation(evaler=evaler,
                                     evalee=evalee,
                                     week=weekNumber,
-                                    rank=eval['rank'],
-                                    token=eval['tokens'],
-                                    description=eval['description'],
-                                    adjective=eval['adjective'],
+                                    rank=eval['evaluation']['rank'],
+                                    token=eval['evaluation']['tokens'],
+                                    description=eval['evaluation']['description'],
+                                    adjective=eval['evaluation']['adjective'],
                                     encryptedManagerEval=encryptedManagerEval,
                                     semester=semester)
-
-        evals.append(evaluation)
-        for e in evals:
+            finalEvals.append(evaluation)
+        for e in finalEvals:
             encryptedEval = evalCipher.encryptEval(e)
-            dbSession.add(encryptedEval)
+            dbSession.add(encryptedEval) #Line of code causing the error
         try:
             dbSession.commit()
         except exc.InvalidRequestError as e:
