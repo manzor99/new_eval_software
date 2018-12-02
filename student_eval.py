@@ -9,8 +9,9 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 import os
-from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify
-import flask_login
+from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify, make_response
+import jwt
+# import flask_login
 from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
@@ -33,7 +34,8 @@ from itsdangerous import URLSafeSerializer
 import socket
 import logging
 from logging.handlers import RotatingFileHandler
-from datetime import timedelta
+# from datetime import timedelta
+import datetime
 from flask_cors import CORS, cross_origin
 #for https
 from OpenSSL import SSL
@@ -89,24 +91,16 @@ app.config["MAIL_SERVER"] = MAIL_SERVER
 app.config["MAIL_PORT"] = MAIL_PORT
 app.config["MAIL_USE_SSL"] = MAIL_USE_SSL
 app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
-app.permanent_session_lifetime = timedelta(seconds=10800)
+app.permanent_session_lifetime = datetime.timedelta(seconds=10800)
 
 mail = Mail(app)
 dbSession = None
 
-login_manager = flask_login.LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
 evalCipher = EvalCipher(key)
 urlSerializer = URLSafeSerializer(key)
 
-#Create SessionMaker just once
-#engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, pool_size=0, pool_recycle=14400)
-
 ##TRYING NULLPOOL
 engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, poolclass=NullPool )
-
 
 try:
     engine.connect()
@@ -192,7 +186,7 @@ def list_all():
                     return render_template("error.html")
                 app.logger.debug('dbsession commit')
                 print ( app_user )
-                clear_session(  )
+                clear_session()
                 return render_template('eval-success.html', week=form.evaluations[0]['week'].data)
             else:
                 return render_template('eval.html',form = form, ga=GOOD_ADJECTIVES, ba=BAD_ADJECTIVES)
@@ -301,25 +295,25 @@ def list_all():
 # **********************************************************************************************************************
 
 
-@app.route('/logout', methods = ['GET', 'POST'])
-def logout():
-    flask_login.logout_user()
-    return 'Logged out'
-
-# @app.route('/logout')
+# @app.route('/logout', methods = ['GET', 'POST'])
 # def logout():
-#     output = {}
-#     try:
-#         clear_session()
-#         app.logger.info('User has logged out successfully.')
-#         output['log'] = 'Successful logging out'
-#         output['status_code'] = 500
-#         # flash('You have been logged out successfully')
-#     except Exception as e:
-#         app.logger.error(e)
-#         output['log'] = str(e)
-#         output['status_code'] = 500
-#     return jsonify(output)
+#     flask_login.logout_user()
+#     return 'Logged out'
+
+@app.route('/logout')
+def logout():
+    output = {}
+    try:
+        clear_session()
+        app.logger.info('User has logged out successfully.')
+        output['log'] = 'Successful logging out'
+        output['status_code'] = 500
+        # flash('You have been logged out successfully')
+    except Exception as e:
+        app.logger.error(e)
+        output['log'] = str(e)
+        output['status_code'] = 500
+    return jsonify(output)
 
 
 def clear_session( ):
@@ -434,7 +428,7 @@ def mail_sender():
 # Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
 # **********************************************************************************************************************
 
-class User(flask_login.UserMixin):
+class User():
     def __init__(self, username=None, password=None, first_name = None, last_name = None):
         self.username = username
         self.password = password
@@ -447,16 +441,30 @@ class User(flask_login.UserMixin):
     def get_id(self):
         return unicode(self.username)
 
+    def encode_auth_token(self, user_name):
+        try:
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=600),
+                'iat': datetime.datetime.utcnow(),
+                'sub': user_name
+            }
+            return jwt.encode(
+                payload,
+                app.config.get('SECRET_KEY'),
+                algorithm='HS256'
+            )
+        except Exception as e:
+            return e
 
-@login_manager.user_loader
-def find_by_username(username):
-    try:
-        data = dbSession.query(Student).filter_by(user_name=username).first()
-        user = User(data.user_name, data.login_pwd, data.first_name, data.last_name)
-        return user
-
-    except Exception:
-        return None
+    @staticmethod
+    def decode_auth_token(auth_token):
+        try:
+            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
+            return payload['sub']
+        except jwt.ExpiredSignatureError:
+            return 'Signature expired. Please log in again.'
+        except jwt.InvalidTokenError:
+            return 'Invalid token. Please log in again.'
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -466,35 +474,41 @@ def login():
     if dbSession is None:
         init_dbSession()
 
+    post_data = request.get_json()
     try:
-        profile_information = request.get_json()
-        print("profile information:", profile_information)
-        app.logger.debug('Attempting User login: '+ profile_information['username'])
-        user = find_by_username(profile_information['username'])
-        user_pwd = profile_information['password']
-        if user is not None:
-            if user.password == user_pwd:
-                flask_login.login_user(user, remember = True)
-                return jsonify({"log": "Success loggin in", "app_user": user.username,
-                                "first_name": user.first_name, "last_name": user.last_name, "status_code": 200})
+        # fetch the user data
+        db_data = dbSession.query(Student).filter_by(
+            user_name = post_data.get('username')
+        ).first()
 
-            else:
-                return jsonify({"log": "Password incorrect", "status_code": 501})
+        if db_data and (db_data.login_pwd == post_data.get('password')):
+            # create the user object
+            user = User(db_data.user_name, db_data.login_pwd, db_data.first_name, db_data.last_name)
+            auth_token = user.encode_auth_token(user.username)
+            print("Auth token created")
+            if auth_token:
+                response_object = {
+                    'log': 'Successfully logged in.',
+                    'username' : user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'status_code': 200,
+                    'auth_token': auth_token
+                }
+                return jsonify(response_object)
         else:
-            return jsonify({"log": "Username incorrect", "status_code": 502})
-
+            response_object = {
+                'status_code': '501',
+                'message': 'User does not exist.'
+            }
+            return jsonify(response_object)
     except Exception as e:
-        return jsonify({"log": "Error", "status_code": 500})
-
-# @app.route('/protected',methods = ['GET', 'POST'])
-# @flask_login.login_required
-# def protected():
-#     if flask_login.current_user:
-#         return jsonify({'Logged in as' : flask_login.current_user.username})
-#     else:
-#         return "User not logged in"
-
-
+        print(e)
+        response_object = {
+            'status_code': 500,
+            'message': 'Try again'
+        }
+        return jsonify(response_object)
 
 # ***********************************************************team()*****************************************************
 # Description: team() creates a Json of all the students except the logged in student to be used by the web application
@@ -504,87 +518,94 @@ def login():
 # Output : returns a json which consists of all the team-members and their respective details
 # **********************************************************************************************************************
 
+
 @app.route('/team',  methods=['GET', 'POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
-@flask_login.login_required
 def team():
     if dbSession is None:
         init_dbSession()
     try:
-        app_user = flask_login.current_user.username
-        # Check if the evaluation has already been submitted by the student for the current week
-        # get the max week from the groups table in database and the current semester
-        semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
-                                                       course_no=CURRENT_COURSE_NO).first()
-        max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
-        number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation) \
-            .filter(EncryptedEvaluation.week == max_week,
-                    EncryptedEvaluation.evaler_id == app_user,
-                    EncryptedEvaluation.semester == semester) \
-            .count()
+        post_data = request.get_json()
+        auth_token = post_data.get('auth_token')
 
-        weekQuery = dbSession.query(Groups).filter_by().all()
-        weekNumberList = []
-        for item in weekQuery:
-            weekNumberList.append(int(item.week))
-        weekNumber = max(weekNumberList)
-        print("Week Number: ", weekNumber)
-        # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
-        if number_of_evaluations_submitted > 0:
-            app.logger.debug("number_of_evaluations_submitted > 0")
-            clear_session()
-            return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 500})
+        if auth_token:
+            resp = User.decode_auth_token(auth_token)
+            if not isinstance(resp, str):
+                app_user = dbSession.query(Student).filter_by(
+                    user_name=post_data.get('username')
+                ).first().user_name
+                # Check if the evaluation has already been submitted by the student for the current week
+                # get the max week from the groups table in database and the current semester
+                semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
+                                                               course_no=CURRENT_COURSE_NO).first()
+                max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
+                number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation) \
+                    .filter(EncryptedEvaluation.week == max_week,
+                            EncryptedEvaluation.evaler_id == app_user,
+                            EncryptedEvaluation.semester == semester) \
+                    .count()
 
-        student = dbSession.query(Student).filter_by(user_name = app_user).first()
-        team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
-        group_student = dbSession.query(Group_Student).filter_by(group_id=team_number).all()
-        new_group_student = []
+                weekQuery = dbSession.query(Groups).filter_by().all()
+                weekNumberList = []
+                for item in weekQuery:
+                    weekNumberList.append(int(item.week))
+                weekNumber = max(weekNumberList)
+                print("Week Number: ", weekNumber)
+                # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
+                if number_of_evaluations_submitted > 0:
+                    app.logger.debug("number_of_evaluations_submitted > 0")
+                    clear_session()
+                    return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 500})
 
-        # Removing the logged in user from the list of team members
-        for member in group_student:
-            if student.user_name != member.student_id:
-                new_group_student.append(member)
+                student = dbSession.query(Student).filter_by(user_name = app_user).first()
+                team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
+                group_student = dbSession.query(Group_Student).filter_by(group_id=team_number).all()
+                new_group_student = []
 
-        # Extracting the team members details from student table
-        student_data = []
-        for member in new_group_student:
-            student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
+                # Removing the logged in user from the list of team members
+                for member in group_student:
+                    if student.user_name != member.student_id:
+                        new_group_student.append(member)
 
-        team_dict = {}
-        for i in range(len(student_data)):
-            member_dict = {'username': student_data[i].user_name,
-                           'first_name': student_data[i].first_name,
-                           'last_name': student_data[i].last_name,
-                           'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
-                           'is_manager': str(new_group_student[i].is_manager),
-                           'evaluation' : {'rank': -1, 'tokens': -1, 'description': -1, 'adjective': -1}
-                           }
-            if new_group_student[i].is_manager == 1:
-                member_dict['approachable_attitude'] = -1
-                member_dict['team_communication'] = -1
-                member_dict['client_interaction'] = -1
-                member_dict['decision_making'] = -1
-                member_dict['resource_utilization'] = -1
-                member_dict['follow_up_to_completion'] = -1
-                member_dict['task_delegation_and_ownership'] = -1
-                member_dict['encourage_team_development'] = -1
-                member_dict['realistic_expectation'] = -1
-                member_dict['performance_under_stress'] = -1
-                member_dict['mgr_description'] = -1
-            team_dict['evalee'+str(i)] = member_dict
+                # Extracting the team members details from student table
+                student_data = []
+                for member in new_group_student:
+                    student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
 
-        output = jsonify({'team': team_dict,
-                          'good_adjectives': GOOD_ADJECTIVES,
-                          'bad_adjectives': BAD_ADJECTIVES,
-                          'status_code': 200,
-                          'log': "Success in extracting team information",
-                          'week':weekNumber
-                          })
+                team_dict = {}
+                for i in range(len(student_data)):
+                    member_dict = {'username': student_data[i].user_name,
+                                   'first_name': student_data[i].first_name,
+                                   'last_name': student_data[i].last_name,
+                                   'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
+                                   'is_manager': str(new_group_student[i].is_manager),
+                                   'evaluation' : {'rank': -1, 'tokens': -1, 'description': -1, 'adjective': -1}
+                                   }
+                    if new_group_student[i].is_manager == 1:
+                        member_dict['approachable_attitude'] = -1
+                        member_dict['team_communication'] = -1
+                        member_dict['client_interaction'] = -1
+                        member_dict['decision_making'] = -1
+                        member_dict['resource_utilization'] = -1
+                        member_dict['follow_up_to_completion'] = -1
+                        member_dict['task_delegation_and_ownership'] = -1
+                        member_dict['encourage_team_development'] = -1
+                        member_dict['realistic_expectation'] = -1
+                        member_dict['performance_under_stress'] = -1
+                        member_dict['mgr_description'] = -1
+                    team_dict['evalee'+str(i)] = member_dict
+
+                output = jsonify({'team': team_dict,
+                                  'good_adjectives': GOOD_ADJECTIVES,
+                                  'bad_adjectives': BAD_ADJECTIVES,
+                                  'status_code': 200,
+                                  'log': "Success in extracting team information",
+                                  'week':weekNumber
+                                  })
+                return output
 
     except Exception as e:
         return jsonify({"log": str(e), "status_code": 500})
-
-    return output
 
 # ***********************************************************team_evaluations()******************************************
 # Description: team_evaluations()

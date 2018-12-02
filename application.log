@@ -32,3 +32,19 @@
 [2018-12-02 12:45:17,404] {student_eval.py:472} DEBUG - Attempting User login: sbaranwa
 [2018-12-02 12:48:31,131] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
 [2018-12-02 12:48:31,134] {student_eval.py:472} DEBUG - Attempting User login: rmanzo
+[2018-12-02 12:52:49,910] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 12:56:03,003] {student_eval.py:472} DEBUG - Attempting User login: rmanzo
+[2018-12-02 13:18:47,157] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 13:18:47,161] {student_eval.py:472} DEBUG - Attempting User login: rmanzo
+[2018-12-02 13:18:50,078] {student_eval.py:472} DEBUG - Attempting User login: sbaranwa
+[2018-12-02 13:21:17,959] {student_eval.py:472} DEBUG - Attempting User login: sbaranwa
+[2018-12-02 13:43:38,667] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 13:43:38,671] {student_eval.py:472} DEBUG - Attempting User login: rmanzo
+[2018-12-02 14:08:07,311] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:09:13,092] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:13:30,296] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:14:02,918] {student_eval.py:122} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:17:56,588] {student_eval.py:123} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:22:52,181] {student_eval.py:123} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:25:33,167] {student_eval.py:124} DEBUG - Attempting DB connection via: sbaranwa
+[2018-12-02 14:43:36,444] {student_eval.py:116} DEBUG - Attempting DB connection via: sbaranwa
