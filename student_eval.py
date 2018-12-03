@@ -195,7 +195,6 @@ def list_all():
             app.logger.debug(e)
             if dbSession is not None:
                 dbSession.rollback()
-            clear_DBsession()
             app.logger.error(e)
             return render_template("error.html")
 
@@ -455,7 +454,7 @@ def login():
 # Description: team() creates a Json of all the students except the logged in student to be used by the web application
 #               to create the list of evalees using the username provided from the student_group table;
 #               returns error if the evaluation for the current week has been submitted already
-# Input : None; uses the username from session information to find the team details
+# Input : auth_token; uses the username from session information to find the team details
 # Output : returns a json which consists of all the team-members and their respective details
 # **********************************************************************************************************************
 
@@ -483,17 +482,16 @@ def team():
                             EncryptedEvaluation.semester == semester) \
                     .count()
 
+                # TODO : Update the beow code to use max_week to get week number
                 weekQuery = dbSession.query(Groups).filter_by().all()
                 weekNumberList = []
                 for item in weekQuery:
                     weekNumberList.append(int(item.week))
                 weekNumber = max(weekNumberList)
-                print("Week Number: ", weekNumber)
                 # error if the number of submissions is greater than 0 for the student, for the current semester
                 if number_of_evaluations_submitted > 0:
                     app.logger.debug("number_of_evaluations_submitted > 0")
-                    clear_session()
-                    return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 500})
+                    return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 501})
 
                 student = dbSession.query(Student).filter_by(user_name = app_user).first()
                 team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
@@ -546,84 +544,88 @@ def team():
                                   })
                 return output
             else:
-                return jsonify({"status_code": 500, "log": "invalid token"})
+                return jsonify({"status_code": 502, "log": "invalid token"})
 
     except Exception as e:
         return jsonify({"log": str(e), "status_code": 500})
 
-# ***********************************************************team_evaluations()******************************************
-# Description: team_evaluations()
-# Input : None; uses the username from session information to find the team details
-# Output : returns a json which consists of all the team-members and their respective details
+# ***********************************************************team_evaluations()*****************************************
+# Description: uses the username from decoded auth_token received from client along with evaluation and updates the
+#           same in database.
+# Input :   auth_token and the evaluations
+# Output : returns log message and status code
 # **********************************************************************************************************************
 
 
 @app.route('/evaluations',  methods=['POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def team_evaluations():
-    if dbSession is None:
-        init_dbSession()
-    post_data = request.get_json()
-    auth_token = post_data.get('auth_token')
+    try:
+        if dbSession is None:
+            init_dbSession()
+        post_data = request.get_json()
+        auth_token = post_data.get('auth_token')
 
-    if auth_token:
-        app_user = decode_auth_token(auth_token)
-        app.logger.debug('Currently logged in user : ' + app_user)
-        if not isinstance(app_user, str):
-            evals = []
-            evaler = dbSession.query(Student).filter_by(user_name=app_user).first()
-            semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR,
-                                                           season=CURRENT_SEASON,
-                                                           course_no=CURRENT_COURSE_NO).first()
+        if auth_token:
+            app_user = decode_auth_token(auth_token)
+            app.logger.debug('Currently logged in user : ' + app_user)
+            if not isinstance(app_user, str):
+                evals = []
+                evaler = dbSession.query(Student).filter_by(user_name=app_user).first()
+                semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR,
+                                                               season=CURRENT_SEASON,
+                                                               course_no=CURRENT_COURSE_NO).first()
 
-            max_week = post_data.get('week')
-            teammates = post_data.get('team')
-            for person in teammates:
-                evalee = dbSession.query(Student).filter_by(user_name=person.get('username')).first()
-                eval = person.get('evaluation')
-                manager_attributes = person.get('manager')
-                encrypted_manager_eval = None
-                print(person['is_manager'])
-                if person['is_manager'] == 1:
-                    manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable'],
-                                                team_communication=manager_attributes['communication'],
-                                                client_interaction=manager_attributes['client_interaction'],
-                                                decision_making=manager_attributes['decision_making'],
-                                                resource_utilization=manager_attributes['resource_utilization'],
-                                                follow_up_to_completion=manager_attributes['follow_up_to_completion'],
-                                                task_delegation_and_ownership=manager_attributes['task_delegation_and_ownership'],
-                                                encourage_team_development=manager_attributes['encourage_team_development'],
-                                                realistic_expectation=manager_attributes['realistic_expectation'],
-                                                performance_under_stress=manager_attributes['performance_under_stress'],
-                                                mgr_description='None')
-                    print("something")
-                    encrypted_manager_eval = evalCipher.encryptManagerEval(manager_eval)
-                    dbSession.add(encrypted_manager_eval)
+                max_week = post_data.get('week')
+                teammates = post_data.get('team')
+                for person in teammates:
+                    evalee = dbSession.query(Student).filter_by(user_name=person.get('username')).first()
+                    eval = person.get('evaluation')
+                    manager_attributes = person.get('manager')
+                    encrypted_manager_eval = None
+                    if person['is_manager'] == 1:
+                        manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable'],
+                                                    team_communication=manager_attributes['communication'],
+                                                    client_interaction=manager_attributes['client_interaction'],
+                                                    decision_making=manager_attributes['decision_making'],
+                                                    resource_utilization=manager_attributes['resource_utilization'],
+                                                    follow_up_to_completion=manager_attributes['follow_up_to_completion'],
+                                                    task_delegation_and_ownership=manager_attributes['task_delegation_and_ownership'],
+                                                    encourage_team_development=manager_attributes['encourage_team_development'],
+                                                    realistic_expectation=manager_attributes['realistic_expectation'],
+                                                    performance_under_stress=manager_attributes['performance_under_stress'],
+                                                    mgr_description='None')
+                        encrypted_manager_eval = evalCipher.encryptManagerEval(manager_eval)
+                        dbSession.add(encrypted_manager_eval)
 
-                evaluation = Evaluation(evaler=evaler,
-                                        evalee=evalee,
-                                        week=max_week,
-                                        rank=eval['rank'],
-                                        token=eval['tokens'],
-                                        description=eval['description'],
-                                        adjective=eval['adjective'],
-                                        encryptedManagerEval=encrypted_manager_eval,
-                                        semester=semester)
-                evals.append(evaluation)
-            for e in evals:
-                encrypted_eval = evalCipher.encryptEval(e)
-                dbSession.add(encrypted_eval)
-            try:
-                dbSession.commit()
-            except exc.InvalidRequestError as e:
-                dbSession.rollback()
-                app.logger.error(e)
-                app.logger.error('Rolling back invalid transaction.')
-                return jsonify({ "error": e, "status_code": 500})
-            return jsonify({"log" : "evaluation updated in db successfully", "status_code": 200})
+                    evaluation = Evaluation(evaler=evaler,
+                                            evalee=evalee,
+                                            week=max_week,
+                                            rank=eval['rank'],
+                                            token=eval['tokens'],
+                                            description=eval['description'],
+                                            adjective=eval['adjective'],
+                                            encryptedManagerEval=encrypted_manager_eval,
+                                            semester=semester)
+                    evals.append(evaluation)
+                for e in evals:
+                    encrypted_eval = evalCipher.encryptEval(e)
+                    dbSession.add(encrypted_eval)
+                try:
+                    dbSession.commit()
+                except exc.InvalidRequestError as e:
+                    dbSession.rollback()
+                    app.logger.error(e)
+                    app.logger.error('Rolling back invalid transaction.')
+                    return jsonify({ "error": e, "status_code": 500})
+                return jsonify({"log" : "evaluation updated in db successfully", "status_code": 200})
+            else:
+                return jsonify({"status_code": 502, "log": "invalid token"})
+    except Exception as e:
+        return jsonify({"log": str(e), "status_code": 500})
 
 
-# ***********************************************************************************************************************************************
+# **********************************************************************************************************************
 
 
 if __name__ == '__main__':
