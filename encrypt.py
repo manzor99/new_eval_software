@@ -16,7 +16,7 @@ class EvalCipher():
      
     def encrypt(self,text):
         
-        cryptor = AES.new(self.key,self.mode, EvalCipher.iv)
+        cryptor = AES.new(self.key.encode("utf8"),self.mode, EvalCipher.iv.encode("utf8"))
         padded = self.pad(text)
         
         self.ciphertext = cryptor.encrypt(padded)
