@@ -559,6 +559,7 @@ def team():
 
 
 @app.route('/evaluations',  methods=['POST'])
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def team_evaluations():
     if dbSession is None:
         init_dbSession()
@@ -582,6 +583,7 @@ def team_evaluations():
                 eval = person.get('evaluation')
                 manager_attributes = person.get('manager')
                 encrypted_manager_eval = None
+                print(person['is_manager'])
                 if person['is_manager'] == 1:
                     manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable'],
                                                 team_communication=manager_attributes['communication'],
