@@ -473,6 +473,7 @@ def team():
             if not isinstance(app_user, str):
                 # Check if the evaluation has already been submitted by the student for the current week
                 # get the max week from the groups table in database and the current semester
+                # get the maxweek from the groups table in database
                 semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON,
                                                                course_no=CURRENT_COURSE_NO).first()
                 max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
@@ -482,45 +483,86 @@ def team():
                             EncryptedEvaluation.semester == semester) \
                     .count()
 
-                # TODO : Update the beow code to use max_week to get week number
-                weekQuery = dbSession.query(Groups).filter_by().all()
-                weekNumberList = []
-                for item in weekQuery:
-                    weekNumberList.append(int(item.week))
-                weekNumber = max(weekNumberList)
-                # error if the number of submissions is greater than 0 for the student, for the current semester
+                # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
                 if number_of_evaluations_submitted > 0:
                     app.logger.debug("number_of_evaluations_submitted > 0")
-                    return jsonify({"log": "Evaluation already submitted for the current week", "status_code": 501})
+                    clear_session()
+                    return render_template('resubmitError.html', week=max_week.scalar())
 
-                student = dbSession.query(Student).filter_by(user_name = app_user).first()
-                team_number = dbSession.query(Group_Student).filter_by(student = student).first().group_id
-                group_student = dbSession.query(Group_Student).filter_by(group_id=team_number).all()
-                new_group_student = []
+                # Aliasing is used for using an alias name for the tables to make writing queries easier; SQLAlchemy
+                evaler = aliased(Group_Student)
+                evalee = aliased(Group_Student)
+                sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'),
+                                             Group_Student.student_id).filter(Groups.id == Group_Student.group_id,
+                                                                              Groups.week == max_week,
+                                                                              Groups.semester == semester).subquery()
 
-                # Removing the logged in user from the list of team members
-                for member in group_student:
-                    if student.user_name != member.student_id:
-                        new_group_student.append(member)
+                # Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
+                limit = 0
+                if LIMIT_EVALS_TO_CURRENT_WEEK == 'True':
+                    limit = max_week
+                sub_student_evals = dbSession.query(Groups.week,
+                                                    Groups.id,
+                                                    evaler.student_id.label('EVALER_ID'),
+                                                    evalee.student_id.label('EVALEE_ID')) \
+                    .filter(Groups.id == evaler.group_id,
+                            evaler.group_id == evalee.group_id,
+                            evaler.student_id <> evalee.student_id,
+                            evaler.student_id == app_user,
+                            Groups.semester == semester,
+                            Groups.week >= limit) \
+                    .order_by(Groups.week,
+                              evaler.student_id,
+                              evalee.student_id) \
+                    .subquery()
 
-                # Extracting the team members details from student table
-                student_data = []
-                for member in new_group_student:
-                    student_data.append(dbSession.query(Student).filter_by(user_name = member.student_id).first())
+                current_evals = dbSession.query(sub_groups.c.week.label('WEEK'),
+                                                sub_student_evals.c.EVALER_ID,
+                                                sub_student_evals.c.EVALEE_ID) \
+                    .filter(sub_groups.c.week >= sub_student_evals.c.week,
+                            sub_groups.c.student_id == sub_student_evals.c.EVALER_ID) \
+                    .group_by(sub_groups.c.week.label('WEEK'),
+                              sub_student_evals.c.EVALER_ID,
+                              sub_student_evals.c.EVALEE_ID) \
+                    .order_by(sub_groups.c.week,
+                              sub_student_evals.c.EVALER_ID) \
+                    .subquery()
+
+                # get the group ids for the current week(max week in the groups table)
+                max_week_group_ids = dbSession.query(Groups.id) \
+                    .filter(Groups.week == max_week, Groups.semester == semester) \
+                    .subquery()
+                current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager) \
+                    .filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager == 1) \
+                    .subquery()
+
+                form_evals = dbSession.query(current_evals.c.WEEK,
+                                             current_evals.c.EVALEE_ID,
+                                             Student.first_name,
+                                             Student.last_name,
+                                             current_managers.c.is_manager) \
+                    .join(Student,
+                          current_evals.c.EVALEE_ID == Student.user_name) \
+                    .outerjoin(current_managers,
+                               current_evals.c.EVALEE_ID == current_managers.c.student_id) \
+                    .order_by(current_evals.c.EVALEE_ID) \
+                    .all()
 
                 team_list = []
-                for i in range(len(student_data)):
-
-                    member_dict = {'username': student_data[i].user_name,
-                                   'first_name': student_data[i].first_name,
-                                   'last_name': student_data[i].last_name,
-                                   'initials': student_data[i].first_name[0].upper()+ student_data[i].last_name[0].upper(),
-                                   'is_manager': str(new_group_student[i].is_manager),
+                i = 1
+                for student_data in form_evals:
+                    member_dict = {'week' : student_data[0],
+                                   'username': student_data[1],
+                                   'first_name': student_data[2],
+                                   'last_name': student_data[3],
+                                   'initials': student_data[2][0].upper() +  student_data[3][0].upper(),
+                                   'is_manager': student_data[4],
                                    'is_complete' : False,
-                                   'evaluation' : {'rank': i+1, 'tokens': 0, 'description': "", 'adjective': ""}
+                                   'evaluation' : {'rank': i, 'tokens': 0, 'description': "", 'adjective': ""}
                                    }
+                    i += 1
                     manager_dict = {}
-                    if new_group_student[i].is_manager == 1:
+                    if student_data[4] == 1:
                         manager_dict['approachable_attitude'] = -1
                         manager_dict['team_communication'] = -1
                         manager_dict['client_interaction'] = -1
@@ -539,8 +581,7 @@ def team():
                                   'good_adjectives': GOOD_ADJECTIVES,
                                   'bad_adjectives': BAD_ADJECTIVES,
                                   'status_code': 200,
-                                  'log': "Success in extracting team information",
-                                  'week': weekNumber
+                                  'log': "Success in extracting team information"
                                   })
                 return output
             else:
