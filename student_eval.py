@@ -44,8 +44,11 @@ from OpenSSL import SSL
 context = SSL.Context(SSL.SSLv23_METHOD)
 #cer = os.path.join(os.path.dirname(__file__), 'certificate/tintin.cs.indiana.edu.crt')
 #ssl_key = os.path.join(os.path.dirname(__file__), 'certificate/tintin.cs.indiana.edu.key')
-cer = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.edu.cer')
-ssl_key = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.edu.key')
+# cer = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.edu.cer')
+# ssl_key = os.path.join(os.path.dirname(__file__), 'certificate/snowy.sice.indiana.edu.key')
+
+cer = os.path.join(os.path.dirname(__file__), 'certificate/localhost.cer')
+ssl_key = os.path.join(os.path.dirname(__file__), 'certificate/localhost.key')
 
 
 parser = SafeConfigParser()
