@@ -1,5 +1,5 @@
 import sys
-sys.path.append("lib/python2.7/site-packages/")
+sys.path.append("/usr/local/lib/python2.7/dist-packages")
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation
@@ -14,7 +14,7 @@ schema = parser.get('login', 'schema')
 host = parser.get('login', 'host')
 port = parser.get('login', 'port')
 
-engine = create_engine('mysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema) 
+engine = create_engine('mysql+pymysql://' + "root" + ':' + 'password' + '@' + host +':' + port + '/' + schema)
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine

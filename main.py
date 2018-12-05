@@ -4,7 +4,7 @@ sys.path.append("lib/python2.7/site-packages/")
 from flask import Flask, render_template, url_for, request, redirect, session
 
 #from flask.ext.session import Session
-
+import * from toJSON
 from sqlalchemy import create_engine, distinct, asc, desc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation, EncryptedManagerEval
@@ -55,9 +55,9 @@ schema = parser.get('login', 'schema')
 host = parser.get('login', 'host')
 port = parser.get('login', 'port')
 
-CURRENT_SEASON = parser.get('currentsem', 'season') 
+CURRENT_SEASON = parser.get('currentsem', 'season')
 CURRENT_YEAR = int(parser.get('currentsem', 'year'))
-CURRENT_COURSE_NO = parser.get('currentsem', 'course_no') 
+CURRENT_COURSE_NO = parser.get('currentsem', 'course_no')
 
 
 BAD_ADJECTIVES = parser.get('adjectives', 'BAD_ADJECTIVES').replace(' ','').split(",")
@@ -68,7 +68,7 @@ for weight in parser.get('constants', 'weights_for_average_rank').split(','):
     weightsForAverageRank.append(int(weight))
 
 app = Flask(__name__)
-db_session = None 
+db_session = None
 
 #######
 
@@ -84,15 +84,15 @@ app.config['SECRET_KEY'] = key
 
 raw_options = {
     'chart':{
-            'width': 1000,  
-            'height' : 500,        
+            'width': 1000,
+            'height' : 500,
     },
     'title':{
     },
     'xAxis': {
         'allowDecimals': False,
         'title': {
-                'enabled': True,                
+                'enabled': True,
         },
         'labels': {
             'formatter': 'function () {\
@@ -107,7 +107,7 @@ raw_options = {
         'max' : 1,
         'reversed': True,
             'title': {
-                
+
             },
             'labels': {
                 'formatter': "function () {\
@@ -118,8 +118,8 @@ raw_options = {
     },
     'legend': {
             'enabled': True,
-            'layout' : 'vertical',            
-            
+            'layout' : 'vertical',
+
     },
         'tooltip': {
             'headerFormat': '<b>{series.name}</b><br/>',
@@ -136,11 +136,11 @@ def main():
 
     #print "session['client_session_auth']: "
     #print session['client_session_auth']
-    
+
     #if not db_session:
     if not db_session or not session['client_session_auth']:
         return redirect(url_for('login'))
-        
+
     if request.method == 'POST':
         semester_id = request.form['semester']
         if request.form['submit'] == 'Get reports':
@@ -155,16 +155,16 @@ def main():
             return redirect(url_for('drop_class', semester_id=semester_id))
         elif request.form['submit'] == 'Get Manager Report':
             week=request.form['week']
-            return redirect(url_for('manager_report', semester_id=semester_id, currentWeek=week))    
+            return redirect(url_for('manager_report', semester_id=semester_id, currentWeek=week))
         elif request.form['submit'] == 'Logout':
             #set session to False
             session['client_session_auth'] = False
             return redirect(url_for('login'))
-                
+
     else:
         semesters = db_session.query(Semester).all()
         semesters.reverse()
-  
+
         weeks = db_session.query(distinct(Groups.week)).all()
         return render_template('main.html', semesters=semesters, weeks=weeks, str=str)
 
@@ -173,24 +173,24 @@ def manager_report(semester_id, currentWeek):
     #if not session['client_session_auth']:
     if not db_session or not session['client_session_auth']:
         return redirect(url_for('login'))
-    # names is a map from "user_name" to "alias_name" (if exists) or "first_name last_name" 
+    # names is a map from "user_name" to "alias_name" (if exists) or "first_name last_name"
     names = mapNames(queryStudents(semester_id))
-    
+
     semester = db_session.query(Semester).filter_by(id=semester_id).one()
 
     encrypted_evals = db_session.query(EncryptedEvaluation).filter(EncryptedEvaluation.semester==semester, EncryptedEvaluation.week==currentWeek, EncryptedEvaluation.manager_id.isnot(None)).order_by(asc(
     EncryptedEvaluation.evalee_id))
-    
+
     manager_list = db_session.query(distinct(encrypted_evals.subquery().c.evalee_id)).all()
-    
+
     ###########  REPEAT FROM REGULAR EVAL TO GET DATA FOR GENERATING CHARTS
-    
+
     # list of students
     students = queryStudents(semester_id)
-    
+
     # which weeks do two students work together, connection[student1][student2] = [week1, week2]
     connection = queryConnection(students, semester)
-    
+
     # Evaluation dictionary: evals[currentWeek][evaler][evalee] = evaluation
     evals = []
     # normalized ranks dictionary: reversedEvals[Week][evalee][evaler][0] = evaluation
@@ -203,12 +203,12 @@ def manager_report(semester_id, currentWeek):
     averageRank = []
     # average token: averageToken[week][student]
     averageToken = []
-    
+
     #Need to pass averageRank through inside
     evals, reversedEvals, sortedEvaler, averageRank, averageToken = queryEvals(currentWeek, semester_id, students, connection)
-    
+
     #############  END REPEAT
-    
+
     managerEvals = {}
     avgMgrEvals = {}
     for manager in manager_list:
@@ -218,7 +218,7 @@ def manager_report(semester_id, currentWeek):
             if manager_id == encrypted_eval.evalee_id:
                 encryptedMgrEval = db_session.query(EncryptedManagerEval).filter_by(manager_id=encrypted_eval.manager_id).first()
                 mgrEval = evalCipher.decryptManagerEval(encryptedMgrEval)
-                
+
                 #ADJUST FOR RAWLINS - change in drawManagerGrid::adjustValue if you want to change it back
                 mgrEval.approachable_attitude=adjustValue(mgrEval.approachable_attitude)
                 mgrEval.team_communication=adjustValue(mgrEval.team_communication)
@@ -229,24 +229,24 @@ def manager_report(semester_id, currentWeek):
                 mgrEval.task_delegation_and_ownership=adjustValue(mgrEval.task_delegation_and_ownership)
                 mgrEval.encourage_team_development=adjustValue(mgrEval.encourage_team_development)
                 mgrEval.realistic_expectation=adjustValue(mgrEval.realistic_expectation)
-                mgrEval.performance_under_stress=adjustValue(mgrEval.performance_under_stress)        
-                
-                
+                mgrEval.performance_under_stress=adjustValue(mgrEval.performance_under_stress)
+
+
                 eval = evalCipher.decryptEval(encrypted_eval)
                 #decode bad chars
                 if decodeUTF:
                     eval.description  = eval.description.decode('utf8')
-                
+
                 managerEvals[manager_id][encrypted_eval.evaler_id] = []
                 managerEvals[manager_id][encrypted_eval.evaler_id].append(mgrEval)
                 managerEvals[manager_id][encrypted_eval.evaler_id].append( eval.description )
-                
-                
-        
-        
+
+
+
+
         for manager in managerEvals:
             avgMgrEvals[manager] = {}
-            
+
             avgMgrEvals[manager]['approachable_attitude'] = []
             avgMgrEvals[manager]['team_communication'] = []
             avgMgrEvals[manager]['client_interaction'] = []
@@ -257,7 +257,7 @@ def manager_report(semester_id, currentWeek):
             avgMgrEvals[manager]['encourage_team_development'] = []
             avgMgrEvals[manager]['realistic_expectation'] = []
             avgMgrEvals[manager]['performance_under_stress'] = []
-            
+
             approachable_attitude = 0.0
             team_communication = 0.0
             client_interaction = 0.0
@@ -268,10 +268,10 @@ def manager_report(semester_id, currentWeek):
             encourage_team_development = 0.0
             realistic_expectation = 0.0
             performance_under_stress = 0.0
-            
-            
+
+
             #pus={}
-            
+
             for evaler in managerEvals[manager]:
                 e = managerEvals[manager][evaler][0]
                 approachable_attitude = approachable_attitude + e.approachable_attitude
@@ -284,7 +284,7 @@ def manager_report(semester_id, currentWeek):
                 encourage_team_development = encourage_team_development + e.encourage_team_development
                 realistic_expectation = realistic_expectation + e.realistic_expectation
                 performance_under_stress = performance_under_stress + e.performance_under_stress
-                
+
                 ####TODO jasonayoder
                 #print "pus"
                 #print pus
@@ -294,12 +294,12 @@ def manager_report(semester_id, currentWeek):
                 #print evaler
                 #print "averageRank[-1][evaler]"
                 #print averageRank[-1][evaler]
-                
+
                 #pus[evaler]={"value":e.performance_under_stress, "weight": averageRank[-1][evaler]}
                 #print "pus[evaler]"
                 #print pus[evaler]
-                
-                
+
+
             num_of_evalers = len(managerEvals[manager])
             avgMgrEvals[manager]['approachable_attitude'].append(round(approachable_attitude/num_of_evalers , round_digits))
             avgMgrEvals[manager]['team_communication'].append(round(team_communication/num_of_evalers , round_digits))
@@ -311,15 +311,15 @@ def manager_report(semester_id, currentWeek):
             avgMgrEvals[manager]['encourage_team_development'].append(round(encourage_team_development/num_of_evalers , round_digits))
             avgMgrEvals[manager]['realistic_expectation'].append(round(realistic_expectation/num_of_evalers , round_digits))
             avgMgrEvals[manager]['performance_under_stress'].append(round(performance_under_stress/num_of_evalers , round_digits))
-            
+
             #TODO jasonayoder
             #avgMgrEvals[manager]['performance_under_stress'].append( pus[evaler] )
             #print "avgMgrEvals[manager]"
             #print avgMgrEvals[manager]
-            
+
 
         filename = generateImageFromManagerValues(avgMgrEvals, names, semester_id, currentWeek )
-                
+
     return render_template('manager-report.html', semester=semester, currentWeek=currentWeek, managerEvals=managerEvals, avgMgrEvals=avgMgrEvals, names=names, filename=filename)
 
 
@@ -332,13 +332,13 @@ def generateImageFromManagerValues( reports, names, semester_id, currentWeek ):
         #TODO jasonayoder
         #print "report['performance_under_stress'][1]"
         #print report['performance_under_stress'][1]
-    
+
     generateCollageImage(values, filename)
     generateIndividualImages(values, filename, names)
-    
+
     return filename
-    
-    
+
+
 
 @app.route('/reports/<int:semester_id>/<int:currentWeek>', methods=['GET', 'POST'])
 def reports(semester_id, currentWeek):
@@ -350,13 +350,13 @@ def reports(semester_id, currentWeek):
     if not db_session or not session['client_session_auth']:
         return redirect(url_for('login'))
     semester = db_session.query(Semester).filter_by(id=semester_id).one()
-    
+
     # list of students
     students = queryStudents(semester_id)
-    
+
     # which weeks do two students work together, connection[student1][student2] = [week1, week2]
     connection = queryConnection(students, semester)
-    
+
     # Evaluation dictionary: evals[currentWeek][evaler][evalee] = evaluation
     evals = []
     # normalized ranks dictionary: reversedEvals[Week][evalee][evaler][0] = evaluation
@@ -369,55 +369,55 @@ def reports(semester_id, currentWeek):
     averageRank = []
     # average token: averageToken[week][student]
     averageToken = []
-    
+
     #Need to pass averageRank through inside
     evals, reversedEvals, sortedEvaler, averageRank, averageToken = queryEvals(currentWeek, semester_id, students, connection)
-    
-    
+
+
     # sort students by unweighted average rank
     sortedByAverageRank = sorted(averageRank[currentWeek-1], key=averageRank[currentWeek-1].get)
-    
-    
-    # names is a map from "user_name" to "alias_name" (if exists) or "first_name last_name" 
+
+
+    # names is a map from "user_name" to "alias_name" (if exists) or "first_name last_name"
     names = mapNames(students)
-    
+
     # isStudentActive is a map from "user_name" to student's status in class
     isStudentActive = mapActiveStudents(students)
-    
+
     # students name list who fail to submit eval
     missingNames = missingEvalers(currentWeek, evals, students)
-         
+
     # compute weighted average rank
     weightedRank = computeWeightedRanks(currentWeek, connection, reversedEvals, weightsForAverageRank)
 
     # generate performance trend comparison chart for all students
     compareChart(currentWeek, students, names, averageRank)
-    
-    # generate performance trend chart for each student 
+
+    # generate performance trend chart for each student
     generateCharts(currentWeek, students, names, averageRank, averageToken)
-    
+
     # most frequent adjective for each evalee, adjectives[evalee] = adjective
     adjectives = mostFrequentAdjectives(currentWeek, reversedEvals, averageRank)
-    
+
     # list of names of the project that each team is on
     teamNames = getTeamNames(students, currentWeek, semester_id)
-    
+
     thisWeekTeamNames = getTeamNames(students, currentWeek+1, semester_id)
-    
-    
+
+
     studentsByTeamLastWeek = sorted( teamNames.items(), key=operator.itemgetter(1) )
     studentsByTeamThisWeek = sorted( thisWeekTeamNames.items(), key=operator.itemgetter(1) )
-    
+
     for i in range(0, len(studentsByTeamLastWeek)):
         studentsByTeamLastWeek[i] = studentsByTeamLastWeek[i][0]
-    
+
     for i in range(0, len(studentsByTeamThisWeek)):
         studentsByTeamThisWeek[i] = studentsByTeamThisWeek[i][0]
-    
-    
-    
+
+
+
     #reversedEvals[currentWeek-1][student_id][evaler][0].description
-    
+
     for student in students:
         student_id = student.user_name
         if student_id in reversedEvals[currentWeek-1].keys():
@@ -427,14 +427,14 @@ def reports(semester_id, currentWeek):
                     reversedEvals[currentWeek-1][student_id][evaler][0].description = reversedEvals[currentWeek-1][student_id][evaler][0].description.decode('utf8')
                 else:
                     reversedEvals[currentWeek-1][student_id][evaler][0].description = reversedEvals[currentWeek-1][student_id][evaler][0].description
-                    
+
                 description=reversedEvals[currentWeek-1][student_id][evaler][0].description
                 #reversedEvals[currentWeek-1][student_id][evaler][0].description = negativeSentiment(description) + description
-                
+
                 reversedEvals[currentWeek-1][student_id][evaler][0].sentiment = negativeSentiment(description)
-    
-    
-    
+
+
+
     return render_template('reports.html',
         semester=semester,
         currentWeek=currentWeek,
@@ -457,27 +457,27 @@ def reports(semester_id, currentWeek):
         BAD_ADJECTIVES=BAD_ADJECTIVES,
         GOOD_ADJECTIVES=GOOD_ADJECTIVES,
         studentsByTeamLastWeek=studentsByTeamLastWeek,
-        studentsByTeamThisWeek=studentsByTeamThisWeek        
+        studentsByTeamThisWeek=studentsByTeamThisWeek
         )
 
 def negativeSentiment(description):
     proc = subprocess.Popen(["curl", "-d", "text="+description, "http://text-processing.com/api/sentiment/"], stdout=subprocess.PIPE)
     (out, err) = proc.communicate()
     obj = json.loads(out)
-    
+
     neg_label= obj["label"] == "neg"
     neg_minus_pos_neu=obj["probability"]["neg"]-obj["probability"]["pos"]-obj["probability"]["neutral"] > 0
     neg_minus_pos=obj["probability"]["neg"]-obj["probability"]["pos"] > 0.4
     neg_high=obj["probability"]["neg"] > 0.8
     neg_med=obj["probability"]["neg"] > 0.71
     neg_low=obj["probability"]["neg"] > 0.65
-    
+
     ret= "LABEL:"+str(obj["label"])
     ret+= "  negative:"+ str(round(obj["probability"]["neg"],2))
     ret+= "  neutral:"+ str(round(obj["probability"]["neutral"],2))
     ret+= "  positive:"+ str(round(obj["probability"]["pos"],2))
-    
-    
+
+
     if neg_label and ( neg_med or neg_low and (neg_minus_pos_neu or neg_minus_pos or neg_high )):
         diff=(obj["probability"]["neg"]-obj["probability"]["pos"]-obj["probability"]["neutral"])
         #return "[NEGATIVE NLTK]" # Neg-Pos-Neu: "+str(neg_minus_pos_neu)+" Neg-Pos "+str(neg_minus_pos)+"  "+str(obj["probability"])
@@ -504,7 +504,7 @@ def queryConnection(students, semester):
         connection[student1.user_name] = {}
         for student2 in students:
             connection[student1.user_name][student2.user_name] = []
-    
+
     #assign connection - must query by both semester and group
     groups = db_session.query(Groups).filter_by(semester=semester).all()
     for group in groups:
@@ -512,10 +512,10 @@ def queryConnection(students, semester):
         for student1 in studentsInGroup:
             for student2 in studentsInGroup:
                 if student1 != student2:
-                    connection[student1.student_id][student2.student_id].append(int(group.week))        
+                    connection[student1.student_id][student2.student_id].append(int(group.week))
     return connection
-                        
-# query evaluation for each week        
+
+# query evaluation for each week
 def queryEvalByWeek(semester_id, week, students, connection):
     # Evaluation dictionary: evalsOneWeek[evaler][evalee] = evaluation
     evalsOneWeek = {}
@@ -538,7 +538,7 @@ def queryEvalByWeek(semester_id, week, students, connection):
             eval = evalCipher.decryptEval(encryptedEval)
             evalee = eval.evalee_id
             evalsOneWeek[evaler][evalee] = eval
-        
+
         for evalee, eval in evalsOneWeek[evaler].iteritems():
             if not reversedEvalsOneWeek.get(evalee):
                 reversedEvalsOneWeek[evalee] = {}
@@ -547,14 +547,14 @@ def queryEvalByWeek(semester_id, week, students, connection):
             numberOfEval = len(evalsOneWeek[evaler])
             reversedEvalsOneWeek[evalee][evaler].append(round((eval.rank - (numberOfEval + 1.0) / 2.0 ) / numberOfEval, round_digits))
             reversedEvalsOneWeek[evalee][evaler].append( round( ( ( 100.0 / len(evalsOneWeek[evaler] )) - eval.token ) / ( 100.0 / len(evalsOneWeek[evaler]) ), round_digits)  )
-    
+
     #sort evaler for each evalee
     for evalee in reversedEvalsOneWeek:
         sortedEvalerOneWeek[evalee] = []
-        
+
         #sort by rank that evaler gives to evalee - not what we want, but will resort it below
         sortedByRank = sorted(reversedEvalsOneWeek[evalee].items(), key=lambda e: e[1][1]) #[1][3]
-        
+
         #put current team members top
         sortedEvalerOneWeek[evalee].append([])
         for item in sortedByRank:
@@ -567,7 +567,7 @@ def queryEvalByWeek(semester_id, week, students, connection):
             evaler = item[0]
             if week not in connection[evalee][evaler]:
                 sortedEvalerOneWeek[evalee][1].append(evaler)
-                
+
     for evalee in reversedEvalsOneWeek:
         flag = True
         for student in students:
@@ -584,22 +584,22 @@ def queryEvalByWeek(semester_id, week, students, connection):
             averageRankOneWeek[evalee] += rank / len(reversedEvalsOneWeek[evalee])
             averageTokenOneWeek[evalee] += token / len(reversedEvalsOneWeek[evalee])
         averageRankOneWeek[evalee] = round(averageRankOneWeek[evalee], round_digits)
-        
-        
+
+
     #### use averageRankOneWeek to update the order on  sortedByRank
     #This is a pretty significant chicken or the egg problem, because the calculations are so involved
     #It is easier to just update the order after the fact.
-    
+
     #sort evaler for each evalee
     for evalee in reversedEvalsOneWeek:
         sortedEvalerOneWeek[evalee] = []
-        
+
         #TODO: this seems to cause an error when I remove a student from being active (srri...)
         #Might need to do a safety check somehow
         #This data is not accessible in the loop above, so we just use it to update here after it exists above
-        
+
         sortedByRank = sorted(reversedEvalsOneWeek[evalee].items(), key=lambda e: averageRankOneWeek[e[0]] if e[0] in averageRankOneWeek else [] )
-        
+
         #put current team members top
         sortedEvalerOneWeek[evalee].append([])
         for item in sortedByRank:
@@ -612,7 +612,7 @@ def queryEvalByWeek(semester_id, week, students, connection):
             evaler = item[0]
             if week not in connection[evalee][evaler]:
                 sortedEvalerOneWeek[evalee][1].append(evaler)
-    
+
     return evalsOneWeek, reversedEvalsOneWeek, sortedEvalerOneWeek, averageRankOneWeek, averageTokenOneWeek
 
 def queryEvals(currentWeek, semester_id, students, connection):
@@ -629,7 +629,7 @@ def queryEvals(currentWeek, semester_id, students, connection):
         sortedEvaler.append(sortedEvalerOneWeek)
         averageRank.append(averageRankOneWeek)
         averageToken.append(averageTokenOneWeek)
-        
+
     return evals, reversedEvals, sortedEvaler, averageRank, averageToken
 
 
@@ -645,17 +645,17 @@ def compareChart(currentWeek, students, names, averageRank):
     chart = Highchart()
     chart.set_dict_options(options)
     series = []
-    
+
     print averageRank[currentWeek-1]
-    
+
 #    for student, r in averageRank[currentWeek-1].items():
     for student in students:
         if student.user_name not in averageRank[currentWeek-1]:
             averageRank[currentWeek-1][student.user_name]=1000
-    
-    
+
+
     for student in sorted(students, key=lambda s: averageRank[currentWeek-1][s.user_name] ):
-        
+
         if averageRank[currentWeek-1][student.user_name]==1000 or not student.is_active:
             continue
         name = names[student.user_name]
@@ -674,7 +674,7 @@ def compareChart(currentWeek, students, names, averageRank):
 def generateCharts(currentWeek, students, names, averageRank, averageToken):
     if not os.path.exists(chart_folder):
         os.makedirs(chart_folder)
-    raw_options['chart']['height'] = 500    
+    raw_options['chart']['height'] = 500
     options = copy.deepcopy(raw_options)
     options['yAxis'] = [{
         'min' : -1,
@@ -713,7 +713,7 @@ def generateCharts(currentWeek, students, names, averageRank, averageToken):
         chart = Highchart()
         options['title']['text'] = names[student.user_name]
         options['chart']['renderTo'] = 'container_' + student.user_name
-        chart.set_dict_options(options)    
+        chart.set_dict_options(options)
         rank_data = []
         token_data = []
         for week in range(1, currentWeek + 1):
@@ -742,7 +742,7 @@ def mapActiveStudents(students):
     isStudentActive = {}
     for student in students:
         isStudentActive[student.user_name] = student.is_active
-    return isStudentActive        
+    return isStudentActive
 
 def missingEvalers(currentWeek, evals, students):
     missingNames = []
@@ -750,7 +750,7 @@ def missingEvalers(currentWeek, evals, students):
         if not evals[currentWeek-1].get(student.user_name) and student.is_active:
            missingNames.append(student.user_name)
     return missingNames
-    
+
 def computeWeightedRanks(currentWeek, connection, reversedEvals, weightsForAverageRank):
     weightedRank = {}
     for evalee in reversedEvals[currentWeek-1]:
@@ -759,7 +759,7 @@ def computeWeightedRanks(currentWeek, connection, reversedEvals, weightsForAvera
         for evaler in reversedEvals[currentWeek-1][evalee]:
             rank = reversedEvals[currentWeek-1][evalee][evaler][1]
             weeks = connection[evalee][evaler]
-            for week in weeks:                
+            for week in weeks:
                 weightedRank[evalee] += rank * weightsForAverageRank[week-1]
                 weightsSum += weightsForAverageRank[week-1]
 
@@ -767,24 +767,24 @@ def computeWeightedRanks(currentWeek, connection, reversedEvals, weightsForAvera
         if weightsSum == 0:
            weightsSum = 1
            print "WARNING MISSING WEIGHTSSUM USING VALUE OF 1"
-        
+
         weightedRank[evalee] = round(weightedRank[evalee] / weightsSum, round_digits)
     return weightedRank
 
 def getTeamNames(students, currentWeek, semester_id):
     result = {}
-    
+
     #lookup each student_id from teh list of students provided
     for student in students:
         student_id = student.user_name
-        
+
         #do an outer join on Groups and Group_Student, filtering allows you to constrain the results
         groupsrow = db_session.query(Groups, Group_Student).\
             filter(Groups.id==Group_Student.group_id).\
             filter(Group_Student.student_id==student_id, Groups.week==currentWeek, Groups.semester_id==semester_id).\
             all()
-        
-        
+
+
         if ( len(groupsrow) == 1):
             groups = groupsrow[0][0]
             group_student = groupsrow[0][1]
@@ -793,7 +793,7 @@ def getTeamNames(students, currentWeek, semester_id):
             print "Warning: there were multiple rows returned!"
         else:
             print "Warning: size zero!"
-    
+
     return result
 
 
@@ -802,17 +802,17 @@ def mostFrequentAdjectives(currentWeek, reversedEvals, averageRank):
     result = {}
     for evalee in reversedEvals[currentWeek-1]:
         dict = {}
-        
+
         first=True
         topEvaler=""
         for student, normrank in sorted(averageRank[currentWeek-1].iteritems(), key=operator.itemgetter(1)):
 
-            if student in reversedEvals[currentWeek-1][evalee]:        
+            if student in reversedEvals[currentWeek-1][evalee]:
                 evaler = student
                 if first:
                     topEvaler=student
                     first=False
-                    
+
                 # for evaler in reversedEvals[currentWeek-1][evalee]:
                 adjs = reversedEvals[currentWeek-1][evalee][evaler][0].adjective.split(' ,.')
                 for adj in adjs:
@@ -820,17 +820,17 @@ def mostFrequentAdjectives(currentWeek, reversedEvals, averageRank):
                     if not count:
                         count = 0
                     dict[adj] = count + 1
-                    
+
                 freqAdjective = max(dict.iteritems(), key=operator.itemgetter(1))[0]
-                
+
                 #If there is only one common adjective, then pick the top ranker evaluator
                 if (dict[freqAdjective] == 1):
                     freqAdjective=reversedEvals[currentWeek-1][evalee][topEvaler][0].adjective
-                
+
                 occurrence = freqAdjective + ' (' + str(dict[freqAdjective])+ ')'
                 result[evalee] = occurrence
     return result
-             
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -844,32 +844,32 @@ def login():
             Base.metadata.bind = engine
             DBSession = sessionmaker(bind=engine)
             db_session = DBSession()
-            
-            
+
+
             # we need to have a variable stored per each connected user which indicates whether or not that user
             # has been logged in successfully
             # normally session will do that, but
-            
+
             #print session
             #session = Session()
             #print session
             #session['username'] = username
             #session['username']=username
             #print session
-        
+
             if username == username_from_form and pwd == password:
                 session['client_session_auth'] = True
             else:
                 session['client_session_auth'] = False
-        
+
             return redirect(url_for('main'))
         except:
-        
+
             session['client_session_auth'] = False
             error = 'Invalid Credentials. Please try again.'
             return render_template('admin_login.html', error=error)
     return render_template('admin_login.html')
-    
+
 @app.route('/set_alias/<int:semester_id>', methods=['GET', 'POST'])
 def set_alias(semester_id):
     students = queryStudents(semester_id)
@@ -880,7 +880,7 @@ def set_alias(semester_id):
         student.alias_name = alias
         db_session.commit()
     return render_template('alias.html', students=students)
-    
+
 @app.route('/drop_class/<int:semester_id>', methods=['GET', 'POST'])
 def drop_class(semester_id):
     students = queryStudents(semester_id)
@@ -892,9 +892,8 @@ def drop_class(semester_id):
         elif request.form['submit'] == 'Drop':
             student.is_active = 0
         db_session.commit()
-    return render_template('drop.html', students=students)   
+    return render_template('drop.html', students=students)
 if __name__ == '__main__':
     context = (cer, ssl_key)
     app.debug = True
     app.run(host='0.0.0.0', port=9009, ssl_context=context)
-        
