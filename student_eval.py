@@ -11,13 +11,13 @@ from tornado.ioloop import IOLoop
 import os
 from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify, make_response
 import jwt
-# import flask_login
+from random import randint
 from sqlalchemy import create_engine, distinct
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import exc
 from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, \
-    EncryptedEvaluation, EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit, User
+    EncryptedEvaluation, EvalForm, EvalListForm, Manager_Eval, ResetPassword, ResetPasswordSubmit, User, Otp
 from ConfigParser import SafeConfigParser
 from encrypt import EvalCipher
 from highcharts import Highchart
@@ -83,6 +83,8 @@ GOOD_ADJECTIVES.sort()
 BAD_ADJECTIVES.sort()
 
 LIMIT_EVALS_TO_CURRENT_WEEK = parser.get('limitevals', 'LIMIT_TO_CURRENT_WEEK')
+VALIDITY_OF_AUTH_TOKEN = parser.get('validity', 'VALIDITY_OF_AUTH_TOKEN')
+VALIDITY_OF_OTP = parser.get('validity', 'VALIDITY_OF_OTP')
 
 parser.read('semester_encryption_keys.ini')
 key = parser.get('encryptionkeys', CURRENT_SEASON + '-' + str(CURRENT_YEAR) + '-' + CURRENT_COURSE_NO)
@@ -91,11 +93,19 @@ app = Flask(__name__)
 app.config['CSRF_ENABLED'] = True
 app.config['SECRET_KEY'] = key
 
-app.config["MAIL_SERVER"] = MAIL_SERVER
-app.config["MAIL_PORT"] = MAIL_PORT
-app.config["MAIL_USE_SSL"] = MAIL_USE_SSL
-app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
-app.permanent_session_lifetime = datetime.timedelta(seconds=10800)
+# app.config["MAIL_SERVER"] = MAIL_SERVER
+# app.config["MAIL_PORT"] = MAIL_PORT
+# app.config["MAIL_USE_SSL"] = MAIL_USE_SSL
+# app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
+# app.permanent_session_lifetime = datetime.timedelta(seconds=10800)
+
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config["MAIL_DEFAULT_SENDER"] = 'shradha.baranwal6@gmail.com'
+app.config['MAIL_USERNAME'] = 'shradha.baranwal6@gmail.com'
+app.config['MAIL_PASSWORD'] = 'humtum2020'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 dbSession = None
@@ -290,92 +300,177 @@ def list_all():
     return render_template('eval.html',form = form,ga=GOOD_ADJECTIVES,ba=BAD_ADJECTIVES)
 
 
-def clear_DBsession():
-    app.logger.debug('Clearing DB Session...')
-    if dbSession is not None:
-        dbSession.flush()
-        dbSession.close()
-    return
+# def clear_DBsession():
+#     app.logger.debug('Clearing DB Session...')
+#     if dbSession is not None:
+#         dbSession.flush()
+#         dbSession.close()
+#     return
 
 
-@app.route('/reset-password', methods=('GET', 'POST',))
-def forgot_password():
-    app.logger.debug('Inside forgot_password')
-    form = ResetPassword()
-    if request.method == 'POST':
-        if dbSession is None:
-            init_dbSession()
 
-        if form.validate_on_submit():
-            user_name = form.user_name.data
-            user = dbSession.query(Student).filter_by(user_name=user_name).first()
-            app.logger.debug('Attempting to request a new password: '+ user_name)
-            if user:
-                token = user.get_token()
-                url = APP_HOST + ':' + APP_PORT + url_for('verify_user') + '?token=' + token
-                user = urlSerializer.dumps({"user":user.email})
-                url = urlSerializer.dumps({"url":url})
-                return redirect(url_for('mail_sender', user=user, url=url))
-    return render_template('reset.html', form=form)
 
-@app.route('/verify-user', methods=('GET', 'POST',))
+# @app.route('/reset-password', methods=('GET', 'POST',))
+# def forgot_password():
+#     app.logger.debug('Inside forgot_password')
+#     form = ResetPassword()
+#     if request.method == 'POST':
+#         if dbSession is None:
+#             init_dbSession()
+#
+#         if form.validate_on_submit():
+#             user_name = form.user_name.data
+#             user = dbSession.query(Student).filter_by(user_name=user_name).first()
+#             app.logger.debug('Attempting to request a new password: '+ user_name)
+#             if user:
+#                 token = user.get_token()
+#                 url = APP_HOST + ':' + APP_PORT + url_for('verify_user') + '?token=' + token
+#                 user = urlSerializer.dumps({"user":user.email})
+#                 url = urlSerializer.dumps({"url":url})
+#                 return redirect(url_for('mail_sender', user=user, url=url))
+#     return render_template('reset.html', form=form)
+#
+# @app.route('/verify-user', methods=('GET', 'POST',))
+# def verify_user():
+#     app.logger.debug('Inside verify_user')
+#     if request.method == 'POST':
+#         form = ResetPasswordSubmit()
+#         if form.validate_on_submit():
+#             user_name = form.user_name.data
+#             pwd = form.password.data
+#             confirm = form.confirm.data
+#             app.logger.debug('Attempting to verify user to reset password: '+ user_name)
+#             if pwd == confirm:
+#                 student = dbSession.query(Student).filter_by(user_name=user_name).update({Student.login_pwd: pwd})
+#                 try:
+#                     dbSession.commit()
+#                 except exc.InvalidRequestError as e:
+#                     dbSession.rollback()
+#                     app.logger.error(e)
+#                     app.logger.error('Rolling back invalid transaction.')
+#                     return render_template("error.html")
+#                 return redirect(url_for('reset_password_success'))
+#             else:
+#                 app.logger.error('Passwords do not match')
+#                 flash('Passwords do not match.')
+#     else:
+#         form = ResetPasswordSubmit()
+#         token = request.args.get('token')
+#         verified_token = Student.verify_token(token)
+#         if verified_token:
+#             student = dbSession.query(Student).filter_by(user_name=verified_token).first()
+#             if student:
+#                 form.user_name.data = student.user_name
+#         else:
+#             app.logger.warning('Token verification failed while resetting the password.')
+#             return render_template("token-verification-error.html")
+#     return render_template('reset-pwd.html', form=form)
+#
+# @app.route('/password-reset-success', methods=('GET', 'POST',))
+# def reset_password_success():
+#     app.logger.info('Login password has been reset successfully.')
+#     return render_template('password-reset-success.html')
+# @app.route("/send-notification")
+# def mail_sender():
+#     try:
+#         app.logger.debug('Inside mail_sender')
+#         user = urlSerializer.loads(request.args.get('user'))
+#         # url = urlSerializer.loads(request.args.get('url'))
+#         link = "https://"\
+#                # + url['url']
+#         msg = Message("P532/P632 Evaluation Account Password Reset",
+#                       html=render_template("email-template.html", reset_url=link),
+#                       recipients=[user['user']])
+#
+#         mail.send(msg)
+#         return redirect(url_for('notification_success'))
+#     except Exception as e:
+#         app.logger.error(e)
+#         return render_template("error.html")
+
+# *********************************************************sign_up******************************************************
+# Description : This method takes in a json consisting of username and password and returns whether the user login is
+#               valid or not.
+# Input : a json consisting of username and password
+# Output : 200 code for successful login, 500 with error msg in json for unsuccessful login
+# **********************************************************************************************************************
+
+@app.route('/verify-user', methods=['POST'])
 def verify_user():
-    app.logger.debug('Inside verify_user')
-    if request.method == 'POST':
-        form = ResetPasswordSubmit()
-        if form.validate_on_submit():
-            user_name = form.user_name.data
-            pwd = form.password.data
-            confirm = form.confirm.data
-            app.logger.debug('Attempting to verify user to reset password: '+ user_name)
-            if pwd == confirm:
-                student = dbSession.query(Student).filter_by(user_name=user_name).update({Student.login_pwd: pwd})
+    if dbSession is None:
+        init_dbSession()
+    try:
+        app.logger.debug('Inside sign up')
+        post_data = request.get_json()
+        user_name = post_data.get('username')
+        user = dbSession.query(Student).filter_by(user_name=user_name).first()
+        if user:
+            email = [user.email]
+            msg = Message("P532/P632 Evaluation Account Password Reset",
+                          recipients=email)
+            otp = randint(10000, 99999)
+            msg.body = "The One-Time Password for resetting the password is : " + str(otp)
+
+            # save the otp for current username in database
+            if dbSession.query(Otp).filter_by(user_name=user_name):
+                dbSession.query(Otp).filter_by(user_name=user_name).delete()
+                dbSession.add(Otp(user_name=user_name, otp=otp))
                 try:
                     dbSession.commit()
                 except exc.InvalidRequestError as e:
                     dbSession.rollback()
                     app.logger.error(e)
                     app.logger.error('Rolling back invalid transaction.')
-                    return render_template("error.html")
-                return redirect(url_for('reset_password_success'))
-            else:
-                app.logger.error('Passwords do not match')
-                flash('Passwords do not match.')
-    else:
-        form = ResetPasswordSubmit()
-        token = request.args.get('token')
-        verified_token = Student.verify_token(token)
-        if verified_token:
-            student = dbSession.query(Student).filter_by(user_name=verified_token).first()
-            if student:
-                form.user_name.data = student.user_name
+                    return jsonify({ "error": e, "status_code": 500})
+            mail.send(msg)
+            return jsonify({"log": "User verified", "status_code": 200, "username":user.user_name})
         else:
-            app.logger.warning('Token verification failed while resetting the password.')
-            return render_template("token-verification-error.html")
-    return render_template('reset-pwd.html', form=form)
-
-@app.route('/password-reset-success', methods=('GET', 'POST',))
-def reset_password_success():
-    app.logger.info('Login password has been reset successfully.')
-    return render_template('password-reset-success.html')
-
-@app.route("/send-notification")
-def mail_sender():
-    try:
-        app.logger.debug('Inside mail_sender')
-        user = urlSerializer.loads(request.args.get('user'))
-        # url = urlSerializer.loads(request.args.get('url'))
-        link = "https://"\
-               # + url['url']
-        msg = Message("P532/P632 Evaluation Account Password Reset",
-                      html=render_template("email-template.html", reset_url=link),
-                      recipients=[user['user']])
-
-        mail.send(msg)
-        return redirect(url_for('notification_success'))
+            return jsonify({"log": "User is not present in the database", "status_code": 501})
     except Exception as e:
-        app.logger.error(e)
-        return render_template("error.html")
+        return jsonify({"log": str(e), "status_code": 500})
+
+
+@app.route('/check-otp', methods=['POST'])
+def check_otp():
+    if dbSession is None:
+        init_dbSession()
+    try:
+        post_data = request.get_json()
+        entered_otp = post_data.get('otp')
+        print(entered_otp)
+        user_name = post_data.get('username')
+        pwd = post_data.get('password')
+        user = dbSession.query(Student).filter_by(user_name=user_name).first()
+        # Check if user exists
+        if user:
+            # Check time elapsed
+            otp = dbSession.query(Otp).filter_by(user_name=user_name).first()
+            creation_time = otp.create_time
+            time_elapsed = datetime.datetime.now() - creation_time
+            if time_elapsed.seconds <= VALIDITY_OF_OTP:
+                # Check if the otp is correct match
+                print(entered_otp, otp.otp)
+                if entered_otp == otp.otp:
+                    # remove the entry from database
+                    dbSession.query(Otp).filter_by(user_name=user_name).delete()
+                    dbSession.query(Student).filter_by(user_name=user_name).update({Student.login_pwd: pwd})
+                    try:
+                        dbSession.commit()
+                    except exc.InvalidRequestError as e:
+                        dbSession.rollback()
+                        app.logger.error(e)
+                        app.logger.error('Rolling back invalid transaction.')
+                        return jsonify({"error": e, "status_code": 500})
+
+                    return jsonify({"log": "Otp verified", "status_code": 200})
+                else:
+                    return jsonify({"log": "OTP is incorrect", "status_code": 501})
+            else:
+                return jsonify({"log": "OTP is no longer valid", "status_code": 502})
+        else:
+            return jsonify({"log": "User is not present in the database", "status_code": 503})
+    except Exception as e:
+        return jsonify({"log": str(e), "status_code": 500})
 
 
 # *********************************************************login()******************************************************
@@ -387,8 +482,8 @@ def mail_sender():
 def encode_auth_token(user_name):
     try:
         payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=10800),
-            'iat': datetime.datetime.utcnow(),
+            'exp': datetime.datetime.now() + datetime.timedelta(days=0, seconds=VALIDITY_OF_AUTH_TOKEN),
+            'iat': datetime.datetime.now(),
             'sub': user_name
         }
         return jwt.encode(

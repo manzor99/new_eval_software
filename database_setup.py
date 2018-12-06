@@ -22,6 +22,21 @@ codecs.register(lambda name: codecs.lookup('utf8' if name == 'utf8mb4' else None
 
 Base = declarative_base()
 
+class Otp(Base):
+    __tablename__ = 'otp'
+    user_name = Column(VARCHAR(15), primary_key=True)
+    otp = Column(VARCHAR(5), nullable=False)
+    create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'user_name': self.user_name,
+            'otp': self.otp,
+            'create_time': self.create_time,
+        }
+
 class User():
     def __init__(self, username=None, password=None, first_name = None, last_name = None):
         self.username = username
@@ -55,7 +70,7 @@ class Student(Base):
             'user_name': self.user_name,
             'email': self.email,
             'alias_name': self.alias_name,
-			'login_pwd': self.login_pwd
+			'login_pwd': self.login_pwd,
         }
 
     def get_token(self, expiration=300):
