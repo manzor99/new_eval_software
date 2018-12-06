@@ -423,7 +423,7 @@ def verify_user():
                     app.logger.error('Rolling back invalid transaction.')
                     return jsonify({ "error": e, "status_code": 500})
             mail.send(msg)
-            return jsonify({"log": "User verified", "status_code": 200, "username":user.user_name})
+            return jsonify({"log": "User verified", "status_code": 200, "first_name":user.first_name})
         else:
             return jsonify({"log": "User is not present in the database", "status_code": 501})
     except Exception as e:
