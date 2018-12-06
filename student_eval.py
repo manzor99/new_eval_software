@@ -105,6 +105,7 @@ app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
 # app.config['MAIL_USERNAME'] = ''
 # app.config['MAIL_PASSWORD'] = ''
 # app.config['MAIL_USE_SSL'] = True
+# app.config['MAIL_USE_TLS'] = False
 
 mail = Mail(app)
 dbSession = None
