@@ -93,19 +93,18 @@ app = Flask(__name__)
 app.config['CSRF_ENABLED'] = True
 app.config['SECRET_KEY'] = key
 
-# app.config["MAIL_SERVER"] = MAIL_SERVER
-# app.config["MAIL_PORT"] = MAIL_PORT
-# app.config["MAIL_USE_SSL"] = MAIL_USE_SSL
-# app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
-# app.permanent_session_lifetime = datetime.timedelta(seconds=10800)
-
-app.config['MAIL_SERVER']='smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config["MAIL_DEFAULT_SENDER"] = 'shradha.baranwal6@gmail.com'
-app.config['MAIL_USERNAME'] = 'shradha.baranwal6@gmail.com'
-app.config['MAIL_PASSWORD'] = 'honeynanhi08'
+app.config["MAIL_SERVER"] = MAIL_SERVER
+app.config["MAIL_PORT"] = MAIL_PORT
+app.config["MAIL_USE_SSL"] = MAIL_USE_SSL
 app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
+app.config["MAIL_DEFAULT_SENDER"] = MAIL_DEFAULT_SENDER
+
+# app.config['MAIL_SERVER']='smtp.gmail.com'
+# app.config['MAIL_PORT'] = 465
+# app.config["MAIL_DEFAULT_SENDER"] = ''
+# app.config['MAIL_USERNAME'] = ''
+# app.config['MAIL_PASSWORD'] = ''
+# app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 dbSession = None
