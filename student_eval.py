@@ -9,7 +9,7 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 import os
-from flask import Flask, flash, render_template, url_for, request, redirect, session, jsonify, make_response
+from flask import Flask, flash, url_for, request, redirect, session, jsonify, make_response
 import jwt
 from random import randint
 from sqlalchemy import create_engine, distinct
@@ -103,7 +103,7 @@ app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config["MAIL_DEFAULT_SENDER"] = 'shradha.baranwal6@gmail.com'
 app.config['MAIL_USERNAME'] = 'shradha.baranwal6@gmail.com'
-app.config['MAIL_PASSWORD'] = 'humtum2020'
+app.config['MAIL_PASSWORD'] = 'honeynanhi08'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
@@ -137,256 +137,8 @@ def init_dbSession():
     except Exception as e:
         app.logger.debug(e)
         app.logger.error(e)
-        return render_template("error.html")
+        return jsonify({"log": str(e), "status_code": 500})
 
-@app.route('/eval', methods=['GET', 'POST'])
-def list_all():
-    app.logger.debug('inside list_all')
-    try:
-        if not session.get('app_user'):
-            clear_DBsession()
-            app.logger.debug('clear_DBsession')
-            return redirect(url_for('login'))
-        app_user = session['app_user']
-        app.logger.debug('Currently logged in user : '+ app_user)
-        if request.method == 'POST':
-            form = EvalListForm()
-            if form.validate_on_submit():
-                evals = []
-                evaler = dbSession.query(Student).filter_by(user_name=form.evaluations[0]['evaler_id'].data).first()
-                semester = dbSession.query(Semester).filter_by(year=CURRENT_YEAR, season=CURRENT_SEASON, course_no=CURRENT_COURSE_NO).first()
-                for eval in form.evaluations:
-                    evalee = dbSession.query(Student).filter_by(user_name=eval['evalee_id'].data).first()
-
-                    encryptedManagerEval = None
-                    if eval['is_manager'].data == 1:
-                        print "inside is_manager"
-                        managerEval = Manager_Eval(approachable_attitude = eval['managerEval']['approachable'].data,
-                                    team_communication = eval['managerEval']['communication'].data,
-                                    client_interaction = eval['managerEval']['client_interaction'].data,
-                                    decision_making = eval['managerEval']['decision_making'].data,
-                                    resource_utilization = eval['managerEval']['resource_utilization'].data,
-                                    follow_up_to_completion = eval['managerEval']['follow_up_to_completion'].data,
-                                    task_delegation_and_ownership = eval['managerEval']['task_delegation_and_ownership'].data,
-                                    encourage_team_development = eval['managerEval']['encourage_team_development'].data,
-                                    realistic_expectation = eval['managerEval']['realistic_expectation'].data,
-                                    performance_under_stress = eval['managerEval']['performance_under_stress'].data,
-                                    mgr_description = 'None')
-
-                        encryptedManagerEval = evalCipher.encryptManagerEval(managerEval)
-                        dbSession.add(encryptedManagerEval)
-
-                    eval['description'].data = eval['description'].data.encode('utf8')
-                    evaluation = Evaluation(evaler=evaler,
-                                            evalee=evalee,
-                                            week=eval['week'].data,
-                                            rank=eval['rank'].data,
-                                            token=eval['tokens'].data,
-                                            description=eval['description'].data,
-                                            adjective=eval['adjective'].data,
-                                            encryptedManagerEval=encryptedManagerEval,
-                                            semester=semester)
-
-                    evals.append(evaluation)
-                for e in evals:
-                    encryptedEval = evalCipher.encryptEval(e)
-                    dbSession.add(encryptedEval)
-                try:
-                    dbSession.commit()
-                except exc.InvalidRequestError as e:
-                    dbSession.rollback()
-                    app.logger.error(e)
-                    app.logger.error('Rolling back invalid transaction.')
-                    return render_template("error.html")
-                app.logger.debug('dbsession commit')
-                print ( app_user )
-                clear_session()
-                return render_template('eval-success.html', week=form.evaluations[0]['week'].data)
-            else:
-                return render_template('eval.html',form = form, ga=GOOD_ADJECTIVES, ba=BAD_ADJECTIVES)
-    except Exception as e:
-            app.logger.debug(e)
-            if dbSession is not None:
-                dbSession.rollback()
-            app.logger.error(e)
-            return render_template("error.html")
-
-    # get the maxweek from the groups table in database
-    max_week = dbSession.query(func.max(Groups.week).label('maxweek')).filter_by(semester=semester)
-    number_of_evaluations_submitted = dbSession.query(EncryptedEvaluation)\
-                                                .filter(EncryptedEvaluation.week == max_week,
-                                                        EncryptedEvaluation.evaler_id == app_user,
-                                                        EncryptedEvaluation.semester == semester)\
-                                                .count()
-
-    # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
-    if number_of_evaluations_submitted > 0:
-        app.logger.debug("number_of_evaluations_submitted > 0")
-        clear_session()
-        return render_template('resubmitError.html', week=max_week.scalar())
-
-    # Aliasing is used for using an alias name for the tables to make writing queries easier; SQLAlchemy
-    evaler = aliased(Group_Student)
-    evalee = aliased(Group_Student)
-    sub_groups = dbSession.query(Groups.week, Groups.id.label('GROUP_ID'),
-                                 Group_Student.student_id).filter(Groups.id == Group_Student.group_id,
-                                                                  Groups.week == max_week,
-                                                                  Groups.semester == semester).subquery()
-
-    # Use this flag to limit evaluations of students in the current week (Fix for P532 project phase)
-    limit = 0
-    if LIMIT_EVALS_TO_CURRENT_WEEK == 'True':
-        limit = max_week
-    sub_student_evals = dbSession.query(Groups.week,
-                                        Groups.id,
-                                        evaler.student_id.label('EVALER_ID'),
-                                        evalee.student_id.label('EVALEE_ID'))\
-                                .filter(Groups.id==evaler.group_id,
-                                        evaler.group_id == evalee.group_id,
-                                        evaler.student_id <> evalee.student_id,
-                                        evaler.student_id == app_user,
-                                        Groups.semester == semester, Groups.week >= limit)\
-                                .order_by(Groups.week,
-                                          evaler.student_id,
-                                          evalee.student_id)\
-                                .subquery()
-
-    current_evals = dbSession.query(sub_groups.c.week.label('WEEK'),
-                                    sub_student_evals.c.EVALER_ID,
-                                    sub_student_evals.c.EVALEE_ID)\
-                            .filter(sub_groups.c.week >= sub_student_evals.c.week,
-                                    sub_groups.c.student_id == sub_student_evals.c.EVALER_ID)\
-                            .group_by(sub_groups.c.week.label('WEEK'),
-                                      sub_student_evals.c.EVALER_ID,
-                                      sub_student_evals.c.EVALEE_ID)\
-                            .order_by(sub_groups.c.week,
-                                      sub_student_evals.c.EVALER_ID)\
-                            .subquery()
-
-
-
-    # get the group ids for the current week(max week in the groups table)
-    max_week_group_ids = dbSession.query(Groups.id)\
-                                    .filter(Groups.week == max_week, Groups.semester == semester)\
-                                    .subquery()
-    current_managers = dbSession.query(Group_Student.student_id, Group_Student.is_manager)\
-                                .filter(Group_Student.group_id.in_(max_week_group_ids), Group_Student.is_manager == 1)\
-                                .subquery()
-    # create the
-    form_evals = dbSession.query(current_evals.c.WEEK,
-                                 current_evals.c.EVALEE_ID,
-                                 Student.first_name,
-                                 Student.last_name,
-                                 current_managers.c.is_manager)\
-                        .join(Student,
-                              current_evals.c.EVALEE_ID == Student.user_name)\
-                        .outerjoin(current_managers,
-                                   current_evals.c.EVALEE_ID == current_managers.c.student_id)\
-                        .order_by(current_evals.c.EVALEE_ID)\
-                        .all()
-
-    evalData = {'evaluations': form_evals}
-    form = EvalListForm(data=MultiDict(evalData))
-
-    # put information in the form for the current week and the current evaluator
-    for x, y in itertools.izip(form_evals,form.evaluations):
-      y.evalee_id.data = x.EVALEE_ID
-      y.evaler_id.data = app_user
-      y.week.data = x.WEEK
-      y.is_manager.data = x.is_manager
-      y.evalee_fname.data = x.first_name
-      y.evalee_lname.data = x.last_name
-
-    return render_template('eval.html',form = form,ga=GOOD_ADJECTIVES,ba=BAD_ADJECTIVES)
-
-
-# def clear_DBsession():
-#     app.logger.debug('Clearing DB Session...')
-#     if dbSession is not None:
-#         dbSession.flush()
-#         dbSession.close()
-#     return
-
-
-
-
-# @app.route('/reset-password', methods=('GET', 'POST',))
-# def forgot_password():
-#     app.logger.debug('Inside forgot_password')
-#     form = ResetPassword()
-#     if request.method == 'POST':
-#         if dbSession is None:
-#             init_dbSession()
-#
-#         if form.validate_on_submit():
-#             user_name = form.user_name.data
-#             user = dbSession.query(Student).filter_by(user_name=user_name).first()
-#             app.logger.debug('Attempting to request a new password: '+ user_name)
-#             if user:
-#                 token = user.get_token()
-#                 url = APP_HOST + ':' + APP_PORT + url_for('verify_user') + '?token=' + token
-#                 user = urlSerializer.dumps({"user":user.email})
-#                 url = urlSerializer.dumps({"url":url})
-#                 return redirect(url_for('mail_sender', user=user, url=url))
-#     return render_template('reset.html', form=form)
-#
-# @app.route('/verify-user', methods=('GET', 'POST',))
-# def verify_user():
-#     app.logger.debug('Inside verify_user')
-#     if request.method == 'POST':
-#         form = ResetPasswordSubmit()
-#         if form.validate_on_submit():
-#             user_name = form.user_name.data
-#             pwd = form.password.data
-#             confirm = form.confirm.data
-#             app.logger.debug('Attempting to verify user to reset password: '+ user_name)
-#             if pwd == confirm:
-#                 student = dbSession.query(Student).filter_by(user_name=user_name).update({Student.login_pwd: pwd})
-#                 try:
-#                     dbSession.commit()
-#                 except exc.InvalidRequestError as e:
-#                     dbSession.rollback()
-#                     app.logger.error(e)
-#                     app.logger.error('Rolling back invalid transaction.')
-#                     return render_template("error.html")
-#                 return redirect(url_for('reset_password_success'))
-#             else:
-#                 app.logger.error('Passwords do not match')
-#                 flash('Passwords do not match.')
-#     else:
-#         form = ResetPasswordSubmit()
-#         token = request.args.get('token')
-#         verified_token = Student.verify_token(token)
-#         if verified_token:
-#             student = dbSession.query(Student).filter_by(user_name=verified_token).first()
-#             if student:
-#                 form.user_name.data = student.user_name
-#         else:
-#             app.logger.warning('Token verification failed while resetting the password.')
-#             return render_template("token-verification-error.html")
-#     return render_template('reset-pwd.html', form=form)
-#
-# @app.route('/password-reset-success', methods=('GET', 'POST',))
-# def reset_password_success():
-#     app.logger.info('Login password has been reset successfully.')
-#     return render_template('password-reset-success.html')
-# @app.route("/send-notification")
-# def mail_sender():
-#     try:
-#         app.logger.debug('Inside mail_sender')
-#         user = urlSerializer.loads(request.args.get('user'))
-#         # url = urlSerializer.loads(request.args.get('url'))
-#         link = "https://"\
-#                # + url['url']
-#         msg = Message("P532/P632 Evaluation Account Password Reset",
-#                       html=render_template("email-template.html", reset_url=link),
-#                       recipients=[user['user']])
-#
-#         mail.send(msg)
-#         return redirect(url_for('notification_success'))
-#     except Exception as e:
-#         app.logger.error(e)
-#         return render_template("error.html")
 
 # *********************************************************sign_up******************************************************
 # Description : This method takes in a json consisting of username and password and returns whether the user login is
@@ -396,6 +148,7 @@ def list_all():
 # **********************************************************************************************************************
 
 @app.route('/verify-user', methods=['POST'])
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def verify_user():
     if dbSession is None:
         init_dbSession()
@@ -431,13 +184,13 @@ def verify_user():
 
 
 @app.route('/check-otp', methods=['POST'])
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def check_otp():
     if dbSession is None:
         init_dbSession()
     try:
         post_data = request.get_json()
         entered_otp = post_data.get('otp')
-        print(entered_otp)
         user_name = post_data.get('username')
         pwd = post_data.get('password')
         user = dbSession.query(Student).filter_by(user_name=user_name).first()
@@ -449,7 +202,6 @@ def check_otp():
             time_elapsed = datetime.datetime.now() - creation_time
             if time_elapsed.seconds <= VALIDITY_OF_OTP:
                 # Check if the otp is correct match
-                print(entered_otp, otp.otp)
                 if entered_otp == otp.otp:
                     # remove the entry from database
                     dbSession.query(Otp).filter_by(user_name=user_name).delete()
@@ -482,8 +234,8 @@ def check_otp():
 def encode_auth_token(user_name):
     try:
         payload = {
-            'exp': datetime.datetime.now() + datetime.timedelta(days=0, seconds=VALIDITY_OF_AUTH_TOKEN),
-            'iat': datetime.datetime.now(),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=int(VALIDITY_OF_AUTH_TOKEN)),
+            'iat': datetime.datetime.utcnow(),
             'sub': user_name
         }
         return jwt.encode(
@@ -492,7 +244,7 @@ def encode_auth_token(user_name):
             algorithm='HS256'
         )
     except Exception as e:
-        return e
+        return str(e)
 
 
 def decode_auth_token(auth_token):
@@ -523,11 +275,11 @@ def login():
             # create the user object
             user = User(db_data.user_name, db_data.login_pwd, db_data.first_name, db_data.last_name)
             auth_token = encode_auth_token(user.username)
-            print("Auth token created")
+            app.logger.debug("Auth token created")
             if auth_token:
                 response_object = {
                     'log': 'Successfully logged in.',
-                    'username' : user.username,
+                    'username': user.username,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'status_code': 200,
@@ -541,7 +293,6 @@ def login():
             }
             return jsonify(response_object)
     except Exception as e:
-        print(e)
         response_object = {
             'status_code': 500,
             'log': 'Try again'
@@ -584,8 +335,7 @@ def team():
                 # resubmission error if the number of submissions is greater than 0 for the student, for the current semester
                 if number_of_evaluations_submitted > 0:
                     app.logger.debug("number_of_evaluations_submitted > 0")
-                    clear_session()
-                    return render_template('resubmitError.html', week=max_week.scalar())
+                    return jsonify({"status_code": 501, "log": "Evaluation already submitted for this week"})
 
                 # Aliasing is used for using an alias name for the tables to make writing queries easier; SQLAlchemy
                 evaler = aliased(Group_Student)

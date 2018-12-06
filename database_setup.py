@@ -2,8 +2,9 @@ import os
 import sys
 #sys.path.append("/u/kspace/new_eval_soft/eval_project-master/lib/python2.7/site-packages/")
 #sys.path.append("/u/kspace/new_eval_soft_github/eval_project/lib/python2.7/site-packages/")
-sys.path.append("/usr/local/lib/python2.7/dist-packages")
-
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib/python2.7/site-packages'))
+# sys.path.append("./lib/python2.7/site-packages/")
+sys.path.append(lib_path)
 
 from flask import flash
 from sqlalchemy import Column, ForeignKey, Integer, String, VARCHAR, TIMESTAMP, UniqueConstraint
