@@ -2,8 +2,9 @@ import os
 import sys
 #sys.path.append("/u/kspace/new_eval_soft/eval_project-master/lib/python2.7/site-packages/")
 #sys.path.append("/u/kspace/new_eval_soft_github/eval_project/lib/python2.7/site-packages/")
-sys.path.append("/usr/local/lib/python2.7/dist-packages")
-
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib/python2.7/site-packages'))
+# sys.path.append("./lib/python2.7/site-packages/")
+sys.path.append(lib_path)
 
 from flask import flash
 from sqlalchemy import Column, ForeignKey, Integer, String, VARCHAR, TIMESTAMP, UniqueConstraint
@@ -21,6 +22,21 @@ import codecs
 codecs.register(lambda name: codecs.lookup('utf8' if name == 'utf8mb4' else None))
 
 Base = declarative_base()
+
+class Otp(Base):
+    __tablename__ = 'otp'
+    user_name = Column(VARCHAR(15), primary_key=True)
+    otp = Column(VARCHAR(5), nullable=False)
+    create_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'user_name': self.user_name,
+            'otp': self.otp,
+            'create_time': self.create_time,
+        }
 
 class User():
     def __init__(self, username=None, password=None, first_name = None, last_name = None):
@@ -55,7 +71,7 @@ class Student(Base):
             'user_name': self.user_name,
             'email': self.email,
             'alias_name': self.alias_name,
-			'login_pwd': self.login_pwd
+			'login_pwd': self.login_pwd,
         }
 
     def get_token(self, expiration=300):
