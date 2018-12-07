@@ -9,6 +9,7 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 import os
+import traceback
 from flask import Flask, flash, url_for, request, redirect, session, jsonify, make_response
 import jwt
 from random import randint
@@ -465,16 +466,16 @@ def team_evaluations():
                                                                season=CURRENT_SEASON,
                                                                course_no=CURRENT_COURSE_NO).first()
 
-                max_week = post_data.get('week')
                 teammates = post_data.get('team')
                 for person in teammates:
                     evalee = dbSession.query(Student).filter_by(user_name=person.get('username')).first()
                     eval = person.get('evaluation')
+                    max_week = person.get("week")
                     manager_attributes = person.get('manager')
                     encrypted_manager_eval = None
                     if person['is_manager'] == 1:
-                        manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable'],
-                                                    team_communication=manager_attributes['communication'],
+                        manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable_attitude'],
+                                                    team_communication=manager_attributes['team_communication'],
                                                     client_interaction=manager_attributes['client_interaction'],
                                                     decision_making=manager_attributes['decision_making'],
                                                     resource_utilization=manager_attributes['resource_utilization'],
@@ -506,11 +507,12 @@ def team_evaluations():
                     dbSession.rollback()
                     app.logger.error(e)
                     app.logger.error('Rolling back invalid transaction.')
-                    return jsonify({ "error": e, "status_code": 500})
+                    return jsonify({ "log": e, "status_code": 500})
                 return jsonify({"log" : "evaluation updated in db successfully", "status_code": 200})
             else:
                 return jsonify({"status_code": 502, "log": "invalid token"})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"log": str(e), "status_code": 500})
 
 
