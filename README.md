@@ -5,7 +5,7 @@
     - python semester-config.py add
     - python student-config.py add
     - python group-config.py add 
-    - python student-eval.py
+    - python student_eval.py
     
 ### jasonayoder updates 7/31/2017
 
