@@ -1,3 +1,12 @@
+#Fall2018 Project(rkasture,ppaithan,sbaranwa,rmanzo) updates 12/7/2018
+
+Steps to run:
+    - python database_setup.py
+    - python semester-config.py add
+    - python student-config.py add
+    - python group-config.py add 
+    - python student-eval.py
+    
 #jasonayoder updates 7/31/2017
 
 This folder has a "lib" directory which contains custom pip installed libraries needed to run the software.
