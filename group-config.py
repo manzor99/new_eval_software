@@ -1,4 +1,9 @@
 import sys
+import os
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib/python2.7/site-packages'))
+# sys.path.append("./lib/python2.7/site-packages/")
+sys.path.append(lib_path)
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import itertools

@@ -1,10 +1,12 @@
 import sys
-sys.path.append("lib/python2.7/site-packages/")
+import os
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib/python2.7/site-packages'))
+# sys.path.append("./lib/python2.7/site-packages/")
+sys.path.append(lib_path)
 
 from flask import Flask, render_template, url_for, request, redirect, session
 
 #from flask.ext.session import Session
-import * from toJSON
 from sqlalchemy import create_engine, distinct, asc, desc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Student, Base, Groups, Semester, Group_Student, Enrollment, Evaluation, EncryptedEvaluation, EncryptedManagerEval
