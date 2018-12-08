@@ -1,6 +1,7 @@
 #Rocco Manzo
 #11/30/2018
 
+from student_eval import *
 import sys
 import smtplib
 from email.mime.text import MIMEText
@@ -9,7 +10,6 @@ from email.mime.text import MIMEText
 def sendEmail(emails):
     msg = MIMEText("Submit your evals by midnight.")
     msg['Subject'] = "Submit Eval"
-
 
     for email in emails:
         msg['From'], msg['To'] = "oosdreminder@gmail.com", email
@@ -25,4 +25,4 @@ def sendEmail(emails):
 
         s.quit()
 
-sendEmail(['rmanzo@iu.edu'])
+sendEmail(getEmailList())

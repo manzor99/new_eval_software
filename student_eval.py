@@ -625,6 +625,16 @@ def team_evaluations():
         return jsonify({"log": str(e), "status_code": 500})
 
 
+def getEmailList():
+    if dbSession is None:
+        init_dbSession()
+    people = dbSession.query(Student).filter_by().all()
+    emails = []
+    for person in people:
+        emails.append(person.email)
+
+    return emails
+
 # **********************************************************************************************************************
 
 
