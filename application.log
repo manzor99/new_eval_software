@@ -7,3 +7,4 @@
 [2018-12-07 14:01:07,319] {/Users/praneta/Desktop/OOSD/FinalProject/new_eval_software/student_eval.py:129} DEBUG - Attempting DB connection via: root
 [2018-12-07 14:01:07,322] {/Users/praneta/Desktop/OOSD/FinalProject/new_eval_software/student_eval.py:155} DEBUG - Inside sign up
 [2018-12-07 14:01:07,386] {/Users/praneta/Desktop/OOSD/FinalProject/new_eval_software/student_eval.py:159} DEBUG - Inside sign up
+[2018-12-09 14:29:11,409] {student_eval.py:130} DEBUG - Attempting DB connection via: praneta
