@@ -529,10 +529,12 @@ if __name__ == '__main__':
     app.secret_key = key
 
     #trying to use tornado
-    ssl_context = { "certfile": cer, "keyfile": ssl_key}
+    # ssl_context = { "certfile": cer, "keyfile": ssl_key}
+    #
+    # http_server = HTTPServer( WSGIContainer(app), ssl_options=ssl_context)
+    #
+    # http_server.listen(55555)
+    #
+    # IOLoop.instance().start()
 
-    http_server = HTTPServer( WSGIContainer(app), ssl_options=ssl_context)
-
-    http_server.listen(55555)
-
-    IOLoop.instance().start()
+    application.run(host='0.0.0.0')
