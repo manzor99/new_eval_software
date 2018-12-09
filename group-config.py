@@ -23,7 +23,9 @@ schema = parser.get('login', 'schema')
 host = parser.get('login', 'host')
 port = parser.get('login', 'port')
 
-engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema)
+engine = create_engine(
+    'mysql+pymysql://' + "praneta" + ':' + "praneta25" + '@' + "mysqldb.c76lby8pfil5.us-east-2.rds.amazonaws.com" + ':' + "3306" + '/' + "Evaluation")
+
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
 Base.metadata.bind = engine

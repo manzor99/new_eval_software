@@ -397,7 +397,7 @@ if __name__ == '__main__':
     host = parser.get('login', 'host')
     port = parser.get('login', 'port')
 
-    engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema)
+    engine = create_engine('mysql+pymysql://' + "praneta" + ':' +"praneta25" + '@' +"mysqldb.c76lby8pfil5.us-east-2.rds.amazonaws.com" +':' + "3306" + '/' + "Evaluation")
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Base.metadata.tables["evaluation"].drop(bind = engine)

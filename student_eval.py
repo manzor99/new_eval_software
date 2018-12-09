@@ -113,7 +113,8 @@ evalCipher = EvalCipher(key)
 urlSerializer = URLSafeSerializer(key)
 
 ##TRYING NULLPOOL
-engine = create_engine('mysql+pymysql://' + username + ':' + password + '@' + host +':' + port + '/' + schema, poolclass=NullPool )
+engine = create_engine(
+    'mysql+pymysql://' + "praneta" + ':' + "praneta25" + '@' + "mysqldb.c76lby8pfil5.us-east-2.rds.amazonaws.com" + ':' + "3306" + '/' + "Evaluation")
 
 try:
     engine.connect()
@@ -156,6 +157,7 @@ def verify_user():
         post_data = request.get_json()
         user_name = post_data.get('username')
         user = dbSession.query(Student).filter_by(user_name=user_name).first()
+        app.logger.debug('Inside sign up')
         if user:
             email = [user.email]
             msg = Message("P532/P632 Evaluation Account Password Reset",
