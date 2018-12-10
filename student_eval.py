@@ -465,16 +465,17 @@ def team_evaluations():
                                                                season=CURRENT_SEASON,
                                                                course_no=CURRENT_COURSE_NO).first()
 
-                max_week = post_data.get('week')
+
                 teammates = post_data.get('team')
                 for person in teammates:
+                    max_week = person.get('week')
                     evalee = dbSession.query(Student).filter_by(user_name=person.get('username')).first()
                     eval = person.get('evaluation')
                     manager_attributes = person.get('manager')
                     encrypted_manager_eval = None
                     if person['is_manager'] == 1:
-                        manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable'],
-                                                    team_communication=manager_attributes['communication'],
+                        manager_eval = Manager_Eval(approachable_attitude=manager_attributes['approachable_attitude'],
+                                                    team_communication=manager_attributes['team_communication'],
                                                     client_interaction=manager_attributes['client_interaction'],
                                                     decision_making=manager_attributes['decision_making'],
                                                     resource_utilization=manager_attributes['resource_utilization'],
@@ -487,6 +488,7 @@ def team_evaluations():
                         encrypted_manager_eval = evalCipher.encryptManagerEval(manager_eval)
                         dbSession.add(encrypted_manager_eval)
 
+                    
                     evaluation = Evaluation(evaler=evaler,
                                             evalee=evalee,
                                             week=max_week,
