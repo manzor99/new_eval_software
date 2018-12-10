@@ -25,7 +25,7 @@ class EvalCipher():
      
     # remove padded char
     def decrypt(self,text):
-        cryptor = AES.new(self.key,self.mode, EvalCipher.iv)
+        cryptor = AES.new(self.key.encode("utf8"),self.mode, EvalCipher.iv.encode("utf8"))
         plain_text  = cryptor.decrypt(a2b_hex(text))
         return plain_text.rstrip(EvalCipher.DUMMY_CHAR)
     

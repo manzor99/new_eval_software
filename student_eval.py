@@ -355,7 +355,7 @@ def team():
                                                     evalee.student_id.label('EVALEE_ID')) \
                     .filter(Groups.id == evaler.group_id,
                             evaler.group_id == evalee.group_id,
-                            evaler.student_id <> evalee.student_id,
+                            evaler.student_id != evalee.student_id,
                             evaler.student_id == app_user,
                             Groups.semester == semester,
                             Groups.week >= limit) \
@@ -399,14 +399,31 @@ def team():
                 team_list = []
                 i = 1
                 for student_data in form_evals:
-                    member_dict = {'week' : student_data[0],
+                    previous_evaluation = dbSession.query(EncryptedEvaluation) \
+                        .filter(EncryptedEvaluation.evalee_id == student_data[1],
+                                EncryptedEvaluation.evaler_id == app_user,
+                                EncryptedEvaluation.semester == semester) \
+                        .order_by(EncryptedEvaluation.week.desc()) \
+                        .first()
+
+                    if previous_evaluation is not None:
+                        decrypted_prev_eval = evalCipher.decryptEval(previous_evaluation)
+                        prev_description = decrypted_prev_eval.description
+                        prev_adjective = decrypted_prev_eval.adjective
+                    else:
+                        prev_description = ""
+                        prev_adjective = ""
+
+                    member_dict = {'week': student_data[0],
                                    'username': student_data[1],
                                    'first_name': student_data[2],
                                    'last_name': student_data[3],
                                    'initials': student_data[2][0].upper() +  student_data[3][0].upper(),
                                    'is_manager': student_data[4],
-                                   'is_complete' : False,
-                                   'evaluation' : {'rank': i, 'tokens': 0, 'description': "", 'adjective': ""}
+                                   'is_complete': False,
+                                   'evaluation': {'rank': i, 'tokens': 0,
+                                                  'description': prev_description,
+                                                  'adjective': prev_adjective}
                                    }
                     i += 1
                     manager_dict = {}
@@ -488,7 +505,6 @@ def team_evaluations():
                         encrypted_manager_eval = evalCipher.encryptManagerEval(manager_eval)
                         dbSession.add(encrypted_manager_eval)
 
-                    
                     evaluation = Evaluation(evaler=evaler,
                                             evalee=evalee,
                                             week=max_week,
@@ -508,8 +524,8 @@ def team_evaluations():
                     dbSession.rollback()
                     app.logger.error(e)
                     app.logger.error('Rolling back invalid transaction.')
-                    return jsonify({ "error": e, "status_code": 500})
-                return jsonify({"log" : "evaluation updated in db successfully", "status_code": 200})
+                    return jsonify({"error": e, "status_code": 500})
+                return jsonify({"log": "evaluation updated in db successfully", "status_code": 200})
             else:
                 return jsonify({"status_code": 502, "log": "invalid token"})
     except Exception as e:
